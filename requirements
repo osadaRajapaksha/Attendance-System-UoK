@@ -14,6 +14,7 @@ This system automates student attendance tracking for university courses. It sup
 ---
 
 ## ✅ Functional Requirements
+Priority levels: (Must,Should,Could)
 
 | ID     | Requirement Description                                | Priority | Status  |
 |--------|--------------------------------------------------------|----------|---------|
@@ -26,6 +27,7 @@ This system automates student attendance tracking for university courses. It sup
 ---
 
 ## ⚙️ Non-Functional Requirements
+Priority levels: (Must,Should,Could)
 
 | ID     | Requirement Description                                | Priority | Status  |
 |--------|--------------------------------------------------------|----------|---------|
