@@ -1,0 +1,80 @@
+# 📋 Requirements Document – University Attendance System
+
+## 🧭 Project Overview
+This system automates student attendance tracking for university courses. It supports QR-based check-ins, real-time dashboards, and secure access for students and lecturers.
+
+---
+
+## 👥 Stakeholders
+- 🎓 Students
+- 👨‍🏫 Lecturers
+- 🏛️ University Admins
+- 🛠️ System Developers
+
+---
+
+## ✅ Functional Requirements
+
+| ID     | Requirement Description                                | Priority | Status  |
+|--------|--------------------------------------------------------|----------|---------|
+| FR-01  | Students can mark attendance via QR code               | Must     | Draft   |
+| FR-02  | Lecturers can view and edit attendance records         | Must     | Draft   |
+| FR-03  | Admins can generate attendance reports                 | Should   | Draft   |
+| FR-04  | Students can view their attendance history             | Should   | Draft   |
+| FR-05  | System sends alerts for low attendance                 | Could    | Draft   |
+
+---
+
+## ⚙️ Non-Functional Requirements
+
+| ID     | Requirement Description                                | Priority | Status  |
+|--------|--------------------------------------------------------|----------|---------|
+| NFR-01 | System must be mobile responsive                       | Must     | Draft   |
+| NFR-02 | Attendance data must be encrypted                      | Must     | Draft   |
+| NFR-03 | System should support 1000+ concurrent users           | Should   | Draft   |
+| NFR-04 | Login should support OTP for added security            | Could    | Draft   |
+
+---
+
+## 🧪 Use Cases
+
+### UC-01: Student Marks Attendance
+**Actors**: Student  
+**Flow**:
+1. Student logs in
+2. Scans QR code displayed in class
+3. System records timestamp and location
+
+### UC-02: Lecturer Reviews Attendance
+**Actors**: Lecturer  
+**Flow**:
+1. Lecturer logs in
+2. Selects course and date
+3. Views or edits attendance entries
+
+---
+
+## 🔗 Traceability Matrix
+
+| Req ID | Linked Use Case | Notes                         |
+|--------|------------------|-------------------------------|
+| FR-01  | UC-01            | QR library integration needed |
+| FR-02  | UC-02            | Role-based access required    |
+| NFR-02 | UC-01, UC-02     | Data encryption module needed |
+
+---
+
+## 📌 Version History
+
+| Version | Date       | Author     | Notes                      |
+|---------|------------|------------|----------------------------|
+| v0.1    | 2025-10-11 | Osada R.   | Initial draft created      |
+| v0.2    | 2025-10-13 | Team Lead  | Added non-functional reqs  |
+
+---
+
+## 🛠️ Next Steps
+- Finalize stakeholder interviews
+- Prioritize requirements with supervisor
+- Create GitHub Issues for each requirement
+- Begin UI mockups and QR integration planning
