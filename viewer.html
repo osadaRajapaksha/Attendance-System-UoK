@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Viewer — Live Locations</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-sA+e2WmX0bM6QY1l+gFf6ZkYfQKkH1wQX0Z8m+v+0Uo=" crossorigin=""/>
+  <style>
+    body { font-family: system-ui, Arial; padding:12px; max-width:1100px; margin:auto; }
+    #map { height: 480px; border:1px solid #ddd; margin-bottom:12px; }
+    table { border-collapse: collapse; width:100%; }
+    th, td { text-align:left; padding:8px; border-bottom:1px solid #eee; }
+    .controls { margin-bottom:8px; }
+    .small { font-size:0.9em; color:#666; }
+  </style>
+</head>
+<body>
+  <h1>Viewer — Live Locations</h1>
+  <p class="small">Shows incoming live location points on a Leaflet map (OpenStreetMap) and in the table below.</p>
+
+  <div class="controls">
+    <label>Filter User ID: <input id="filter" placeholder="leave empty for all" /></label>
+  </div>
+
+  <div id="map"></div>
+
+  <h3>Live users</h3>
+  <table id="tbl">
+    <thead><tr><th>User ID</th><th>Latitude</th><th>Longitude</th><th>Accuracy (m)</th><th>Updated</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o9N1j7kPSsR6Xm1yIJ6k3r8bQJX3wzYf1p5pMM1w5uA=" crossorigin=""></script>
+  <script>
+const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/';
+const ws = new WebSocket(wsUrl);
+
+const users = {}; // user_id -> {lat, lon, accuracy, ts, marker}
+
+const map = L.map('map').setView([0,0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+const tbody = document.querySelector('#tbl tbody');
+const filterInput = document.getElementById('filter');
+
+ws.onopen = () => console.log('WS open');
+ws.onmessage = (ev) => {
+  try {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'location' && msg.payload) {
+      const p = msg.payload;
+      const uid = p.user_id;
+      const lat = parseFloat(p.lat);
+      const lon = parseFloat(p.lon);
+      const acc = p.accuracy_m || p.accuracy || '';
+      const ts = p.timestamp || new Date().toISOString();
+      // update user
+      let u = users[uid];
+      if (!u) {
+        const marker = L.circleMarker([lat, lon], { radius: 8 }).addTo(map).bindPopup(uid);
+        u = { marker, lat, lon, acc, ts };
+        users[uid] = u;
+      } else {
+        u.lat = lat; u.lon = lon; u.acc = acc; u.ts = ts;
+        u.marker.setLatLng([lat, lon]);
+        u.marker.bindPopup(uid + '<br/>' + new Date(ts).toLocaleString());
+      }
+      renderTable();
+    }
+  } catch(e){ console.error(e); }
+};
+ws.onclose = () => console.log('WS closed');
+
+function renderTable(){
+  tbody.innerHTML = '';
+  const filter = (filterInput.value || '').trim();
+  Object.keys(users).forEach(uid => {
+    if (filter && !uid.includes(filter)) return;
+    const u = users[uid];
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + uid + '</td><td>' + u.lat.toFixed(6) + '</td><td>' + u.lon.toFixed(6) + '</td><td>' + u.acc + '</td><td>' + new Date(u.ts).toLocaleTimeString() + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+// auto-zoom to show all markers when updated
+setInterval(() => {
+  const keys = Object.keys(users);
+  if (keys.length === 0) return;
+  const latlngs = keys.map(k => [users[k].lat, users[k].lon]);
+  try {
+    const bounds = L.latLngBounds(latlngs);
+    map.fitBounds(bounds.pad(0.25), { maxZoom: 16, animate: true });
+  } catch(e){ }
+}, 1500);
+  </script>
+</body>
+</html>
