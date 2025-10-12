@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tracker — Live Location</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: system-ui, Arial; padding:16px; max-width:900px; margin:auto; }
+    label { display:block; margin:8px 0; }
+    button { padding:8px 12px; margin-right:8px; }
+    pre { background:#f7f7f7; padding:10px; border-radius:6px; overflow:auto; }
+    #status { margin-top:8px; color:#333; }
+  </style>
+</head>
+<body>
+  <h1>Tracker — Live Location</h1>
+  <p>Open this page on the device whose location you want to share. Keep it open for continuous updates.</p>
+
+  <label>User ID: <input id="userId" placeholder="user-123" /></label>
+  <label>Update interval (seconds): <input id="interval" type="number" value="5" min="1" /></label>
+
+  <div>
+    <button id="start">Start tracking</button>
+    <button id="stop" disabled>Stop</button>
+  </div>
+
+  <div id="status">Idle</div>
+
+  <h3>Last sent</h3>
+  <pre id="last">—</pre>
+
+<script>
+let ws;
+let watchId;
+let sendTimer;
+const statusEl = document.getElementById('status');
+const lastEl = document.getElementById('last');
+
+function setStatus(s){ statusEl.textContent = s; }
+
+document.getElementById('start').onclick = async () => {
+  const userId = document.getElementById('userId').value.trim() || 'user-unknown';
+  const intervalSec = Math.max(1, parseInt(document.getElementById('interval').value || '5', 10));
+
+  const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/';
+  ws = new WebSocket(wsUrl);
+  ws.onopen = () => setStatus('WebSocket connected');
+  ws.onclose = () => setStatus('WebSocket closed');
+
+  if (!('geolocation' in navigator)) {
+    alert('Geolocation not supported');
+    return;
+  }
+
+  // get initial position, then set interval to send last known
+  let lastPos = null;
+
+  function sendPosition(pos){
+    const payload = {
+      user_id: userId,
+      lat: pos.coords.latitude,
+      lon: pos.coords.longitude,
+      accuracy_m: pos.coords.accuracy,
+      timestamp: new Date(pos.timestamp).toISOString()
+    };
+    const text = JSON.stringify(payload);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(text);
+      lastEl.textContent = text;
+      setStatus('Sent at ' + new Date().toLocaleTimeString());
+    } else {
+      // fallback HTTP
+      fetch('/v1/location', {method:'POST', headers:{'Content-Type':'application/json'}, body:text}).catch(()=>{});
+      lastEl.textContent = text;
+      setStatus('Sent via HTTP (fallback)');
+    }
+  }
+
+  watchId = navigator.geolocation.watchPosition(pos => {
+    lastPos = pos;
+    // immediate send
+    sendPosition(pos);
+  }, err => {
+    console.error(err);
+    setStatus('Geolocation error: ' + err.message);
+  }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
+
+  // periodic resend in case watch isn't firing frequently
+  sendTimer = setInterval(() => {
+    if (lastPos) sendPosition(lastPos);
+  }, intervalSec * 1000);
+
+  document.getElementById('start').disabled = true;
+  document.getElementById('stop').disabled = false;
+  setStatus('Tracking started');
+};
+
+document.getElementById('stop').onclick = () => {
+  if (watchId) navigator.geolocation.clearWatch(watchId);
+  if (ws) ws.close();
+  if (sendTimer) clearInterval(sendTimer);
+  setStatus('Stopped');
+  document.getElementById('start').disabled = false;
+  document.getElementById('stop').disabled = true;
+};
+</script>
+</body>
+</html>
