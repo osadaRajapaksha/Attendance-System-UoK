@@ -18,7 +18,7 @@ Priority levels: (Must,Should,Could)
 
 | ID     | Requirement Description                                | Priority | Status  |
 |--------|--------------------------------------------------------|----------|---------|
-| FR-01  | Students can mark attendance via QR code               | Must     | Draft   |
+| FR-01  | Students can mark attendance via sharing location      | Must     | Draft   |
 | FR-02  | Lecturers can view and edit attendance records         | Must     | Draft   |
 | FR-03  | Admins can generate attendance reports                 | Should   | Draft   |
 | FR-04  | Students can view their attendance history             | Should   | Draft   |
