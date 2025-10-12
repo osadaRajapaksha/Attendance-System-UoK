@@ -1,0 +1,16 @@
+{
+  "name": "render-live-location",
+  "version": "1.0.0",
+  "description": "Live location tracker + viewer (Leaflet map) ready for Render.com",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.13.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
