@@ -12,5 +12,5 @@ public class UserResponse {
     private String id;
     private String username;
     private String email;
-    private Role role;  // Use Role enum instead of String
+    private Role role;
 }
