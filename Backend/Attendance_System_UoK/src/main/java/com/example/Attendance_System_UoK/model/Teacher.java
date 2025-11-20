@@ -11,4 +11,9 @@ public class Teacher extends User {
 
     private String teacherId;
     private String position;
+
+    @Override
+    public String getUsername() {
+        return super.getEmail();
+    }
 }

@@ -27,7 +27,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
 
-    // --- REGISTER ONLY STUDENTS ---
+    //  REGISTER ONLY STUDENTS
     public AuthResponse register(RegisterRequest request) {
 
         // Check if email already exists in students
@@ -35,7 +35,7 @@ public class AuthService {
             throw new RuntimeException("Email already exists");
         }
 
-        // Create Student entity
+
         Student student = new Student();
         student.setEmail(request.getEmail());
         student.setFullName(request.getFullName());
@@ -53,7 +53,6 @@ public class AuthService {
         student.setDepartment(request.getDepartment());
         student.setFaculty(request.getFaculty());
 
-        // Save to DB
         studentRepository.save(student);
 
         String token = jwtUtil.generateToken(student);
@@ -108,7 +107,7 @@ public class AuthService {
         }
 
 
-        // Save into correct repository
+        // last login time Save into  repository
         if (user instanceof Student) {
             studentRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
         } else if (user instanceof Teacher) {
@@ -118,9 +117,7 @@ public class AuthService {
         }
 
 
-        // -------------------------------------------------
         // Generate token
-        // -------------------------------------------------
         String token = jwtUtil.generateToken(user);
 
         // Build response

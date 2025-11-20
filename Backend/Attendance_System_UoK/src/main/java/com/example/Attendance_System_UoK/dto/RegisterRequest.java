@@ -21,5 +21,5 @@ public class RegisterRequest {
     private String department;
     private String faculty;
 
-    // Teacher/admin fields are not needed for student registration
+
 }
