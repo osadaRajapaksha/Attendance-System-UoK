@@ -18,4 +18,6 @@ public interface StudentRepository extends MongoRepository<Student, String> {
     @Update("{ '$set': { 'lastLogin': ?1 } }")
     void updateLastLogin(String username, LocalDateTime lastLogin);
 
+    @Query(value = "{ 'username': ?0 }", fields = "{ '_id': 1 }")
+    String findIdByUsername(String username);
 }

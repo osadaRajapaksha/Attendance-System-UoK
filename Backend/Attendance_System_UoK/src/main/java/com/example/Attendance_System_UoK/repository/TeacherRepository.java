@@ -13,6 +13,7 @@ public interface TeacherRepository extends MongoRepository<Teacher, String> {
     Optional<Teacher> findByUsername(String username);
 
 
+
     @Query("{ 'username': ?0 }")
     @Update("{ '$set': { 'lastLogin': ?1 } }")
     void updateLastLogin(String username, LocalDateTime lastLogin);
