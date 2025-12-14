@@ -1,5 +1,6 @@
 package com.example.Attendance_System_UoK.service.impl;
 
+import com.example.Attendance_System_UoK.dto.CourseBasicResponse;
 import com.example.Attendance_System_UoK.dto.CreateCourseDTO;
 import com.example.Attendance_System_UoK.model.Course;
 import com.example.Attendance_System_UoK.model.Student;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
@@ -31,6 +33,20 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
+
+    @Override
+    public List<CourseBasicResponse> getAllCourses() {
+        return courseRepository.findAll()
+                .stream()
+                .map(course -> new CourseBasicResponse(
+                        course.getId(),
+                        course.getName(),
+                        course.getCode()
+                ))
+                .collect(Collectors.toList());
+    }
+
+
 
 
 
@@ -93,4 +109,6 @@ public class CourseServiceImpl implements CourseService {
     public List<Course> getCoursesByTeacher(String teacherId) {
         return courseRepository.findByTeacherId(teacherId);
     }
+
+
 }

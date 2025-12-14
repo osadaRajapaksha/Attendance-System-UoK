@@ -1,5 +1,6 @@
 package com.example.Attendance_System_UoK.controller;
 
+import com.example.Attendance_System_UoK.dto.CourseBasicResponse;
 import com.example.Attendance_System_UoK.dto.CreateCourseDTO;
 import com.example.Attendance_System_UoK.model.Course;
 import com.example.Attendance_System_UoK.model.Student;
@@ -38,6 +39,12 @@ public class CourseController {
     public Course createCourse(@Valid @RequestBody CreateCourseDTO dto, Authentication authentication) {
         String username = authentication.getName();
         return courseService.createCourse(dto, username);
+    }
+
+
+    @GetMapping
+    public List<CourseBasicResponse> getAllCourses() {
+        return courseService.getAllCourses();
     }
 
 

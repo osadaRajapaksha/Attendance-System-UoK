@@ -1,5 +1,6 @@
 package com.example.Attendance_System_UoK.service;
 
+import com.example.Attendance_System_UoK.dto.CourseBasicResponse;
 import com.example.Attendance_System_UoK.dto.CreateCourseDTO;
 import com.example.Attendance_System_UoK.model.Course;
 
@@ -9,4 +10,6 @@ public interface CourseService {
     Course createCourse(CreateCourseDTO dto, String username);
     Course enrollStudent(String courseId, String studentId);
     List<Course> getCoursesByTeacher(String teacherId);
+    List<CourseBasicResponse> getAllCourses();
+
 }

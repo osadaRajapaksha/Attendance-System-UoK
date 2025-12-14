@@ -13,7 +13,6 @@ import java.util.List;
 public class Student extends User {
 
     private String studentId;
-    private Integer batchYear;
     private String degreeProgram;
 
     private List<String> courseIds = new ArrayList<>();
