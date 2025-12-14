@@ -16,7 +16,6 @@ public class RegisterRequest {
 
     // Student-specific fields
     private String studentId;
-    private Integer batchYear;
     private String degreeProgram;
     private String department;
     private String faculty;

@@ -48,7 +48,6 @@ public class AuthService {
 
         // Student-specific fields
         student.setStudentId(request.getStudentId());
-        student.setBatchYear(request.getBatchYear());
         student.setDegreeProgram(request.getDegreeProgram());
         student.setDepartment(request.getDepartment());
         student.setFaculty(request.getFaculty());
@@ -59,12 +58,9 @@ public class AuthService {
 
         return new AuthResponse(
                 token,
-                student.getUsername(),
                 student.getEmail(),
                 student.getRole(),
-                student.getStudentId(),
-                null,
-                null
+                student.getStudentId()
         );
     }
 
@@ -123,7 +119,6 @@ public class AuthService {
         // Build response
         return new AuthResponse(
                 token,
-                user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
                 user instanceof Student ? ((Student) user).getStudentId() : null,

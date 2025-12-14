@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 public class AuthResponse {
 
     private String token;
-    private String username;
     private String email;
     private Role role; // Use Role enum instead of String
 
@@ -20,19 +19,24 @@ public class AuthResponse {
     private String teacherId;
     private String adminId;
 
-    public AuthResponse(String token, String id,String username, String email, Role role) {
+    public AuthResponse(String token, String id,String email, Role role) {
         this.token = token;
-        this.username = username;
         this.email = email;
         this.role = role;
 
     }
 
 
-    public AuthResponse(String token, String username, String email, Role role) {
+    public AuthResponse(String token, String email, Role role) {
         this.token = token;
-        this.username = username;
         this.email = email;
         this.role = role;
+    }
+
+    public AuthResponse(String token, String email, Role role, String studentId) {
+        this.token = token;
+        this.email = email;
+        this.role = role;
+        this.studentId = studentId;
     }
 }
