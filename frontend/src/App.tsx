@@ -1,8 +1,8 @@
 import './App.css'
 import { useState } from 'react'
 // Import the named `Login` component and the tracker to show after login
-import { Login } from "./components/login";
-import GMaps from "./components/gmaps";
+import { Login } from "./components/student/login";
+import GMaps from "./components/teacher/gmaps";
 
 function App() {
   // Initialize logged-in state from presence of a stored token
