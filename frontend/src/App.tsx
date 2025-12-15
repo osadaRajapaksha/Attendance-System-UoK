@@ -5,8 +5,8 @@ import { Login } from "./components/student/login";
 import GMaps from "./components/teacher/gmaps";
 
 function App() {
-  // Initialize logged-in state from presence of a stored token
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => Boolean(localStorage.getItem('token')));
+  // Always start on the Login screen on startup, even if a token exists
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   if (!isLoggedIn) {
     return <Login onLogin={() => setIsLoggedIn(true)} />;
