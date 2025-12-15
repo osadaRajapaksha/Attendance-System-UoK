@@ -286,10 +286,7 @@ function LocationTracker(): JSX.Element {
 
                 {/* Display the persistent device ID so the user can copy/see it */}
                 <div className="bg-light rounded p-3 mb-3">
-                  <p className="mb-0 small text-muted">
-                    <strong>Device ID:</strong>{" "}
-                    <span className="font-monospace small">{deviceId}</span>
-                  </p>
+                  
 
                   <div className="mt-2 small device-info">
                     <div><strong>Device model:</strong> {deviceInfo.deviceModel}</div>
