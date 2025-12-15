@@ -1,0 +1,125 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+/* Location Tracker responsive tweaks */
+.location-card {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Make the card occupy a larger portion of the viewport on larger screens */
+@media (min-width: 768px) {
+  .location-card .card-body {
+    padding: 2.5rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .location-card {
+    max-width: 1100px;
+  }
+  .location-card .card-body {
+    padding: 3rem;
+  }
+}
+
+/* Improve spacing on small viewports */
+@media (max-width: 576px) {
+  .location-card .card-body {
+    padding: 1rem;
+  }
+  .login-container, .location-card {
+    margin: 1rem;
+  }
+}
+
+/* Small helper for long record text to keep it contained */
+.record-meta {
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Device info display */
+.device-info {
+  color: #444;
+}
+.device-info div {
+  line-height: 1.1;
+}
+
+/* Map container for select-location component */
+.map-container {
+  width: 100%;
+  height: 480px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+@media (max-width: 576px) {
+  .map-container { height: 320px; }
+}
+
+
+
+/* Login/Signup styling */
+.login-container {
+  max-width: 420px;
+  margin: 2rem auto;
+}
+.vertical-accent {
+  width: 6px;
+  background: var(--bs-primary);
+  border-radius: 4px 0 0 4px;
+}
+.login-card {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.btn-login-text {
+  color: #000 !important;
+  font-weight: 600;
+}
+
+.read-the-docs {
+  color: #888;
+}
