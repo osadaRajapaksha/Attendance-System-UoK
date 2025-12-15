@@ -8,11 +8,13 @@ import com.example.Attendance_System_UoK.repository.AdminRepository;
 import com.example.Attendance_System_UoK.repository.StudentRepository;
 import com.example.Attendance_System_UoK.repository.TeacherRepository;
 import com.example.Attendance_System_UoK.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+@RequiredArgsConstructor
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -21,17 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final TeacherRepository teacherRepository;
     private final AdminRepository adminRepository;
 
-    public CustomUserDetailsService(
-            UserRepository userRepository,
-            StudentRepository studentRepository,
-            TeacherRepository teacherRepository,
-            AdminRepository adminRepository
-    ) {
-        this.userRepository = userRepository;
-        this.studentRepository = studentRepository;
-        this.teacherRepository = teacherRepository;
-        this.adminRepository = adminRepository;
-    }
+
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
