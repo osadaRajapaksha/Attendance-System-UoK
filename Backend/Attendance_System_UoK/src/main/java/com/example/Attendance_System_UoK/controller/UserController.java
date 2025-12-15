@@ -21,13 +21,9 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
-        String username = authentication.getName();
-        return ResponseEntity.ok(userService.getUserByUsername(username));
-    }
 
-    @GetMapping("/mee")
+
+    @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentStudent(Authentication authentication) {
         String username = authentication.getName();
         return ResponseEntity.ok(userService.getStudentByUsername(username));
