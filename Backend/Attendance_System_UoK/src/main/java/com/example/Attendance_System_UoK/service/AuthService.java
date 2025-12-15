@@ -59,6 +59,7 @@ public class AuthService {
         return new AuthResponse(
                 token,
                 student.getEmail(),
+                student.getFullName(),
                 student.getRole(),
                 student.getStudentId()
         );
@@ -121,6 +122,7 @@ public class AuthService {
                 token,
                 user.getEmail(),
                 user.getRole(),
+                user.getFullName(),
                 user instanceof Student ? ((Student) user).getStudentId() : null,
                 user instanceof Teacher ? ((Teacher) user).getTeacherId() : null,
                 user instanceof Admin ? ((Admin) user).getAdminId() : null

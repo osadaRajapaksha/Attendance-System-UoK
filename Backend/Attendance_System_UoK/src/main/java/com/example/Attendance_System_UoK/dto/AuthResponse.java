@@ -12,30 +12,20 @@ public class AuthResponse {
 
     private String token;
     private String email;
-    private Role role; // Use Role enum instead of String
+    private Role role;
+    private String fullName;
+
 
     // Optional: include role-specific ID
     private String studentId;
     private String teacherId;
     private String adminId;
 
-    public AuthResponse(String token, String id,String email, Role role) {
+
+    public AuthResponse(String token, String email,String fullName, Role role, String studentId) {
         this.token = token;
         this.email = email;
-        this.role = role;
-
-    }
-
-
-    public AuthResponse(String token, String email, Role role) {
-        this.token = token;
-        this.email = email;
-        this.role = role;
-    }
-
-    public AuthResponse(String token, String email, Role role, String studentId) {
-        this.token = token;
-        this.email = email;
+        this.fullName = fullName;
         this.role = role;
         this.studentId = studentId;
     }

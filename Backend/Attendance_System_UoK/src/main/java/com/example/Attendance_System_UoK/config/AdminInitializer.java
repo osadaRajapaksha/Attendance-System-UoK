@@ -29,7 +29,7 @@ public class AdminInitializer {
             admin.setEmail(adminEmail);
             admin.setUsername(adminEmail);
             admin.setPassword(passwordEncoder.encode("Admin@123"));
-            admin.setRole(Role.ROLE_ADMIN); // or Role.ROLE_ADMIN depending on enum
+            admin.setRole(Role.ROLE_ADMIN);
             admin.setActive(true);
 
             adminRepository.save(admin);

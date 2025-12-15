@@ -34,22 +34,5 @@ public class UserController {
     }
 
 
-    @GetMapping("/admin/all")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
-    }
 
-    @GetMapping("/admin/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
-        return ResponseEntity.ok(userService.getUserById(id));
-    }
-
-    @DeleteMapping("/admin/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
-        userService.deleteUser(id);
-        return ResponseEntity.ok().build();
-    }
 }

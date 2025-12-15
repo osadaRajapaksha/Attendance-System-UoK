@@ -53,13 +53,12 @@ public class CourseController {
 
     // Enroll student (can be done by student or admin or teacher)
     @PostMapping("/{courseId}/enroll")
-    @PreAuthorize("hasAnyRole('STUDENT','ADMIN','TEACHER')")
+    @PreAuthorize("hasAnyRole('STUDENT')")
     public Course enrollStudent(@PathVariable String courseId, Authentication authentication) {
         String username = authentication.getName();
         Optional<Student> student = studentRepository.findByUsername(username);
         String id = student.get().getId();
         return courseService.enrollStudent(courseId, id);
-//        return id;
     }
 
     @GetMapping("/teacher")
