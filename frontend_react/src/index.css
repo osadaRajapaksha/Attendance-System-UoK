@@ -1,0 +1,73 @@
+
+/* Custom Scrollbar for nicer look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Modern Card Styles */
+.course-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  height: 100%;
+}
+
+.course-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.course-card .card-body {
+  padding: 1.5rem;
+}
+
+.course-card .card-title {
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.course-card .card-subtitle {
+  font-weight: 500;
+  color: #7f8c8d;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-weight: 800;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Dark mode adjustments would go here if needed */
+@media (prefers-color-scheme: dark) {
+  .course-card {
+    background: #2a2a2a;
+    color: #fff;
+  }
+  .course-card .card-title {
+    color: #fff;
+  }
+  .course-card .card-subtitle {
+     color: #aaa;
+  }
+  .page-title {
+    color: #fff;
+  }
+}

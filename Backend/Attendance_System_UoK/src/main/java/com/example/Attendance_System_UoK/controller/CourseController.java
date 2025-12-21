@@ -27,13 +27,11 @@ public class CourseController {
     private final StudentRepository studentRepository;
 
     public CourseController(CourseService courseService,
-                            TeacherRepository teacherRepository, StudentRepository studentRepository) {
+            TeacherRepository teacherRepository, StudentRepository studentRepository) {
         this.courseService = courseService;
         this.teacherRepository = teacherRepository;
         this.studentRepository = studentRepository;
     }
-
-
 
     @PostMapping("/create")
     @PreAuthorize("hasRole('TEACHER')")
@@ -42,14 +40,10 @@ public class CourseController {
         return courseService.createCourse(dto, username);
     }
 
-
     @GetMapping
     public List<CourseBasicResponse> getAllCourses() {
         return courseService.getAllCourses();
     }
-
-
-
 
     // Enroll student (can be done by student or admin or teacher)
     @PostMapping("/{courseId}/enroll")
@@ -72,5 +66,14 @@ public class CourseController {
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
         return courseService.getCoursesByTeacher(teacher.getId());
+    }
+
+    @GetMapping("/enrolled")
+    @PreAuthorize("hasRole('STUDENT')")
+    public List<CourseBasicResponse> getEnrolledCourses(Authentication authentication) {
+        String username = authentication.getName();
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+        return courseService.getEnrolledCourses(student.getId());
     }
 }

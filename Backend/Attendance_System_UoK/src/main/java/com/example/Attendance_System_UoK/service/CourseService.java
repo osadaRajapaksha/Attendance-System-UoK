@@ -8,8 +8,13 @@ import java.util.List;
 
 public interface CourseService {
     Course createCourse(CreateCourseDTO dto, String username);
+
     Course enrollStudent(String courseId, String studentId);
+
     List<Course> getCoursesByTeacher(String teacherId);
+
     List<CourseBasicResponse> getAllCourses();
+
+    List<CourseBasicResponse> getEnrolledCourses(String studentId);
 
 }

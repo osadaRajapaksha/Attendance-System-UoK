@@ -10,8 +10,6 @@ import com.example.Attendance_System_UoK.repository.StudentRepository;
 import com.example.Attendance_System_UoK.repository.TeacherRepository;
 import com.example.Attendance_System_UoK.service.CourseService;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -20,7 +18,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
 
 import java.util.List;
 import java.util.Optional;
@@ -38,17 +35,21 @@ public class CourseServiceImpl implements CourseService {
     public List<CourseBasicResponse> getAllCourses() {
         return courseRepository.findAll()
                 .stream()
-                .map(course -> new CourseBasicResponse(
-                        course.getId(),
-                        course.getName(),
-                        course.getCode()
-                ))
+                .map(course -> {
+                    String teacherName = "Unknown Teacher";
+                    if (course.getTeacherId() != null) {
+                        teacherName = teacherRepository.findById(course.getTeacherId())
+                                .map(Teacher::getFullName)
+                                .orElse("Unknown Teacher");
+                    }
+                    return new CourseBasicResponse(
+                            course.getId(),
+                            course.getName(),
+                            course.getCode(),
+                            teacherName);
+                })
                 .collect(Collectors.toList());
     }
-
-
-
-
 
     @Override
     public Course createCourse(CreateCourseDTO dto, String username) {
@@ -68,13 +69,10 @@ public class CourseServiceImpl implements CourseService {
 
         // Set empty student list if null
         c.setStudentIds(
-                c.getStudentIds() == null ? List.of() : c.getStudentIds()
-        );
+                c.getStudentIds() == null ? List.of() : c.getStudentIds());
 
         return courseRepository.save(c);
     }
-
-
 
     private MongoTemplate mongoTemplate;
 
@@ -110,5 +108,24 @@ public class CourseServiceImpl implements CourseService {
         return courseRepository.findByTeacherId(teacherId);
     }
 
-
+    @Override
+    public List<CourseBasicResponse> getEnrolledCourses(String studentId) {
+        return courseRepository.findAll()
+                .stream()
+                .filter(course -> course.getStudentIds() != null && course.getStudentIds().contains(studentId))
+                .map(course -> {
+                    String teacherName = "Unknown Teacher";
+                    if (course.getTeacherId() != null) {
+                        teacherName = teacherRepository.findById(course.getTeacherId())
+                                .map(Teacher::getFullName)
+                                .orElse("Unknown Teacher");
+                    }
+                    return new CourseBasicResponse(
+                            course.getId(),
+                            course.getName(),
+                            course.getCode(),
+                            teacherName);
+                })
+                .collect(Collectors.toList());
+    }
 }
