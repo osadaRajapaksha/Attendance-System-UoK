@@ -45,6 +45,12 @@ public class CourseController {
         return courseService.getAllCourses();
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'STUDENT')")
+    public Course getCourseById(@PathVariable String id) {
+        return courseService.getCourseById(id);
+    }
+
     // Enroll student (can be done by student or admin or teacher)
     @PostMapping("/{courseId}/enroll")
     @PreAuthorize("hasAnyRole('STUDENT')")
@@ -75,5 +81,12 @@ public class CourseController {
         Student student = studentRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         return courseService.getEnrolledCourses(student.getId());
+    }
+
+    @GetMapping("/{courseId}/students")
+    @PreAuthorize("hasRole('TEACHER')")
+    public List<com.example.Attendance_System_UoK.dto.StudentBasicInfo> getEnrolledStudents(
+            @PathVariable String courseId) {
+        return courseService.getEnrolledStudents(courseId);
     }
 }

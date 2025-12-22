@@ -128,4 +128,23 @@ public class CourseServiceImpl implements CourseService {
                 })
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Course getCourseById(String courseId) {
+        return courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+    }
+
+    @Override
+    public List<com.example.Attendance_System_UoK.dto.StudentBasicInfo> getEnrolledStudents(String courseId) {
+        Course course = getCourseById(courseId);
+        List<String> studentIds = course.getStudentIds();
+        if (studentIds == null || studentIds.isEmpty()) {
+            return List.of();
+        }
+        return studentRepository.findAllById(studentIds).stream()
+                .map(s -> new com.example.Attendance_System_UoK.dto.StudentBasicInfo(
+                        s.getId(), s.getFullName(), s.getStudentId(), null))
+                .collect(Collectors.toList());
+    }
 }

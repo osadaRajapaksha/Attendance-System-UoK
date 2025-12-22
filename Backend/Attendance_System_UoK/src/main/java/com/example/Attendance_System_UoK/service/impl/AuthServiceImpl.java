@@ -35,6 +35,21 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already exists");
         }
 
+        // Validate Student ID
+        String studentId = request.getStudentId();
+        if (studentId == null || !studentId.matches("^[A-Z]{2}/\\d{4}/\\d{4,5}$")) {
+            throw new RuntimeException(
+                    "Invalid Student ID format. Expected format: XX/year/number (e.g., SE/2021/001, SC/2022/12345)");
+        }
+
+        // Check if studentId already exists (optional but good practice, though not
+        // explicitly asked, avoiding constraint violation is better)
+        // Assuming studentId is unique? The user didn't say, but IDs usually are. I
+        // won't enforce uniqueness unless I see unique index or user asks, but usually
+        // it should be.
+        // However, model doesn't show unique constraint. I'll stick to format
+        // validation.
+
         Student student = new Student();
         student.setEmail(request.getEmail());
         student.setFullName(request.getFullName());
@@ -59,8 +74,7 @@ public class AuthServiceImpl implements AuthService {
                 student.getEmail(),
                 student.getFullName(),
                 student.getRole(),
-                student.getStudentId()
-        );
+                student.getStudentId());
     }
 
     @Override
@@ -69,20 +83,14 @@ public class AuthServiceImpl implements AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
 
         User user = studentRepository.findByUsername(request.getUsername())
                 .map(u -> (User) u)
-                .orElseGet(() ->
-                        teacherRepository.findByUsername(request.getUsername())
-                                .map(u -> (User) u)
-                                .orElseGet(() ->
-                                        adminRepository.findByUsername(request.getUsername())
-                                                .orElseThrow(() -> new RuntimeException("User not found"))
-                                )
-                );
+                .orElseGet(() -> teacherRepository.findByUsername(request.getUsername())
+                        .map(u -> (User) u)
+                        .orElseGet(() -> adminRepository.findByUsername(request.getUsername())
+                                .orElseThrow(() -> new RuntimeException("User not found"))));
 
         if (user instanceof Student) {
             studentRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
@@ -101,7 +109,6 @@ public class AuthServiceImpl implements AuthService {
                 user.getFullName(),
                 user instanceof Student ? ((Student) user).getStudentId() : null,
                 user instanceof Teacher ? ((Teacher) user).getTeacherId() : null,
-                user instanceof Admin ? ((Admin) user).getAdminId() : null
-        );
+                user instanceof Admin ? ((Admin) user).getAdminId() : null);
     }
 }

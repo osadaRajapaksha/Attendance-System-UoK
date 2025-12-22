@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Tabs, Tab, Button, Alert, Spinner, Badge, Card, Row, Col } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
 interface Course {
@@ -84,7 +85,7 @@ const StudentDashboard: React.FC = () => {
                   Enroll Now
                 </Button>
               ) : (
-                <Button variant="outline-success" className="w-100" disabled>
+                <Button variant="outline-success" className="w-100" as={Link} to={`/student/course/${course.id}`}>
                   Go to Course
                 </Button>
               )}
@@ -97,7 +98,9 @@ const StudentDashboard: React.FC = () => {
 
   return (
     <Container className="mt-5">
-      <h2 className="page-title">Student Dashboard</h2>
+       <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="page-title mb-0">Student Dashboard</h2>
+      </div>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
       

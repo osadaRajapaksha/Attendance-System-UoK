@@ -6,6 +6,10 @@ import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import TeacherSessionCreate from './pages/TeacherSessionCreate';
+import TeacherCourseDetails from './pages/TeacherCourseDetails';
+import StudentSessions from './pages/StudentSessions';
+import StudentCourseDetails from './pages/StudentCourseDetails';
 import ProtectedRoute from './components/ProtectedRoute';
 
 
@@ -39,10 +43,14 @@ function App() {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute allowedRoles={['ROLE_STUDENT']} />}>
           <Route path="/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/student/sessions" element={<StudentSessions />} />
+          <Route path="/student/course/:courseId" element={<StudentCourseDetails />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['ROLE_TEACHER']} />}>
           <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+          <Route path="/teacher/course/:courseId" element={<TeacherCourseDetails />} />
+          <Route path="/teacher/course/:courseId/create-session" element={<TeacherSessionCreate />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>

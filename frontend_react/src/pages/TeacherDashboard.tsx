@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Button, Modal, Form, Alert, Spinner, Card, Row, Col, Badge } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
 interface Course {
@@ -61,7 +62,7 @@ const TeacherDashboard: React.FC = () => {
                     Manage and view details for {course.name}.
                  </Card.Text>
                  <div className="mt-3">
-                    <Button variant="outline-primary" className="w-100">View Details</Button>
+                    <Button variant="outline-primary" className="w-100" as={Link} to={`/teacher/course/${course.id}`}>View Details</Button>
                  </div>
               </Card.Body>
            </Card>

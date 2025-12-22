@@ -64,10 +64,56 @@ const AdminDashboard: React.FC = () => {
           <Button variant="primary" type="submit">Create Teacher</Button>
         </Form>
       </Card>
-      
-      {/* Can add User Management List here in future */}
+
+      <Card className="mt-4 p-4 shadow-sm" style={{ maxWidth: '600px' }}>
+         <h4>System Settings</h4>
+         <TimezoneSettings />
+      </Card>
     </Container>
   );
+};
+
+const TimezoneSettings = () => {
+    const [timezone, setTimezone] = useState('');
+    const [msg, setMsg] = useState('');
+    
+    // Common timezones
+    const timezones = [
+        "Asia/Colombo",
+        "UTC",
+        "Asia/Kolkata",
+        "America/New_York",
+        "Europe/London",
+        "Australia/Sydney"
+    ];
+
+    React.useEffect(() => {
+        api.get('/api/system/timezone').then(res => setTimezone(res.data.timezone)).catch(console.error);
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            await api.post('/api/system/timezone', { timezone });
+            setMsg('Timezone updated successfully');
+            setTimeout(() => setMsg(''), 3000);
+        } catch (e) {
+            console.error(e);
+            setMsg('Failed to update');
+        }
+    };
+
+    return (
+        <div>
+            {msg && <Alert variant="info">{msg}</Alert>}
+            <Form.Group className="mb-3">
+                <Form.Label>System Timezone</Form.Label>
+                <Form.Select value={timezone} onChange={e => setTimezone(e.target.value)}>
+                    {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                </Form.Select>
+            </Form.Group>
+            <Button variant="warning" onClick={handleSave}>Update Timezone</Button>
+        </div>
+    );
 };
 
 export default AdminDashboard;

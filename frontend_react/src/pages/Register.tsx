@@ -31,7 +31,8 @@ const Register: React.FC = () => {
     password: '',
     department: '',
     faculty: 'Science',
-    degreeProgram: ''
+    degreeProgram: '',
+    studentId: ''
   });
 
   const [error, setError] = useState('');
@@ -54,6 +55,14 @@ const Register: React.FC = () => {
     // Basic Validation matching legacy logic
     if (formData.faculty === "Science" && !formData.degreeProgram) {
         setError("Select degree program");
+        setLoading(false);
+        return;
+    }
+
+    // Student ID Validation
+    const studentIdRegex = /^[A-Z]{2}\/\d{4}\/\d{4,5}$/;
+    if (!studentIdRegex.test(formData.studentId)) {
+        setError("Invalid Student ID format. Use XX/XXXX/XXXX or XX/XXXX/XXXXX (First 2 letters capital)");
         setLoading(false);
         return;
     }
@@ -126,6 +135,21 @@ const Register: React.FC = () => {
                 </Form.Text>
               </div>
             )}
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Student ID</Form.Label>
+            <Form.Control 
+              type="text" 
+              name="studentId"
+              placeholder="XX/XXXX/XXXX" 
+              value={formData.studentId}
+              onChange={handleChange}
+              required 
+            />
+             <Form.Text className="text-muted">
+              Format: XX/XXXX/XXXX or XX/XXXX/XXXXX (First 2 letters must be capital)
+            </Form.Text>
           </Form.Group>
 
            <Form.Group className="mb-3">
