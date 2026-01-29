@@ -72,7 +72,7 @@ public class AdminService {
 
         // Basic Student ID Validation
         String studentId = request.getStudentId();
-        if (studentId == null || !studentId.matches("^[A-Z]{2}/\\d{4}/\\d{4,5}$")) {
+        if (studentId == null || !studentId.matches("^[A-Z]{2}/\\d{4}/\\d{3,5}$")) {
             throw new RuntimeException("Invalid Student ID format. Expected: XX/year/number");
         }
 

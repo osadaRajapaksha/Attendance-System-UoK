@@ -1,0 +1,15 @@
+{
+  "email": "lakmini.jayasinghe2@uok.lk",
+  "password": "23"
+}
+
+{
+  "email": "admin@kln.ac.lk",
+  "password": "Admin@123"
+}
+
+{
+  "email": "madhuma-ec21071@stu.kln.ac.lk",
+  "password": "Password123!"
+}
+mlzp buyi bneo samj

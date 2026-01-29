@@ -7,6 +7,7 @@ import com.example.Attendance_System_UoK.model.*;
 import com.example.Attendance_System_UoK.repository.*;
 import com.example.Attendance_System_UoK.security.JwtUtil;
 import com.example.Attendance_System_UoK.service.AuthService;
+import com.example.Attendance_System_UoK.service.OtpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,6 +27,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final OtpService otpService;
 
     // REGISTER ONLY STUDENTS
     @Override
@@ -35,11 +37,16 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already exists");
         }
 
+        // Validate OTP
+        if (!otpService.validateOtp(request.getEmail(), request.getOtp())) {
+            throw new RuntimeException("Invalid or expired OTP");
+        }
+
         // Validate Student ID
         String studentId = request.getStudentId();
-        if (studentId == null || !studentId.matches("^[A-Z]{2}/\\d{4}/\\d{4,5}$")) {
+        if (studentId == null || !studentId.matches("^[A-Z]{2}/\\d{4}/\\d{3,5}$")) {
             throw new RuntimeException(
-                    "Invalid Student ID format. Expected format: XX/year/number (e.g., SE/2021/001, SC/2022/12345)");
+                    "Invalid Student ID format. Expected format: XX/year/number (e.g., SE/2021/001, SC/2022/071)");
         }
 
         // Check if studentId already exists (optional but good practice, though not

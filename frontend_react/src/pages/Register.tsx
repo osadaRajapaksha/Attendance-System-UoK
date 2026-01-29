@@ -31,12 +31,15 @@ const Register: React.FC = () => {
     password: '',
     faculty: 'Science',
     degreeProgram: '',
-    studentId: ''
+    studentId: '',
+    otp: ''
   });
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -45,11 +48,36 @@ const Register: React.FC = () => {
     });
   };
 
+  const handleSendOtp = async () => {
+      const msDomainRegex = /^[A-Za-z0-9._%+-]+@(outlook\.com|hotmail\.com|live\.com|kln\.ac\.lk|stu\.kln\.ac\.lk)$/i;
+      if (!msDomainRegex.test(formData.email)) {
+          setError("Invalid email domain. Only Microsoft accounts and University emails (@kln.ac.lk, @stu.kln.ac.lk) are allowed.");
+          return;
+      }
+      
+      setOtpLoading(true);
+      setError('');
+      try {
+          await api.post('/api/otp/send', { email: formData.email });
+          setOtpSent(true);
+          setSuccess('OTP sent to your email.');
+      } catch (err: any) {
+          console.error(err);
+          setError(err.response?.data?.message || 'Failed to send OTP');
+      } finally {
+          setOtpLoading(false);
+      }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    setLoading(true);
+    
+    if (!otpSent) {
+        setError("Please verify your email via OTP first.");
+        return;
+    }
 
     // Basic Validation matching legacy logic
     if (formData.faculty === "Science" && !formData.degreeProgram) {
@@ -59,9 +87,9 @@ const Register: React.FC = () => {
     }
 
     // Student ID Validation
-    const studentIdRegex = /^[A-Z]{2}\/\d{4}\/\d{4,5}$/;
+    const studentIdRegex = /^[A-Z]{2}\/\d{4}\/\d{3,5}$/;
     if (!studentIdRegex.test(formData.studentId)) {
-        setError("Invalid Student ID format. Use XX/XXXX/XXXX or XX/XXXX/XXXXX (First 2 letters capital)");
+        setError("Invalid Student ID format. Use XX/XXXX/XXX or XX/XXXX/XXXX (e.g. EC/2021/071)");
         setLoading(false);
         return;
     }
@@ -107,8 +135,28 @@ const Register: React.FC = () => {
               value={formData.email}
               onChange={handleChange}
               required 
+              disabled={otpSent}
             />
+            {!otpSent && (
+                <Button variant="secondary" className="mt-2" onClick={handleSendOtp} disabled={otpLoading || !formData.email}>
+                    {otpLoading ? <Spinner animation="border" size="sm" /> : 'Send OTP'}
+                </Button>
+            )}
           </Form.Group>
+            
+          {otpSent && (
+              <Form.Group className="mb-3">
+                <Form.Label>Enter OTP</Form.Label>
+                <Form.Control 
+                  type="text" 
+                  name="otp"
+                  placeholder="Enter 6-digit OTP" 
+                  value={formData.otp}
+                  onChange={handleChange}
+                  required 
+                />
+              </Form.Group>
+          )}
 
           <Form.Group className="mb-3">
             <Form.Label>Password</Form.Label>

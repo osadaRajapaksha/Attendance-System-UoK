@@ -20,5 +20,7 @@ public class RegisterRequest {
     private String department;
     private String faculty;
 
+    // OTP
+    private String otp;
 
 }
