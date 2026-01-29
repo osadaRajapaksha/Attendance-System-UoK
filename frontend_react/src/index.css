@@ -1,73 +1,169 @@
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-/* Custom Scrollbar for nicer look */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Modern Card Styles */
-.course-card {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  border: none;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  height: 100%;
+:root {
+  --primary-color: #6366f1;
+  --secondary-color: #a855f7;
+  --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --radius: 16px;
 }
 
-.course-card:hover {
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #ee9ca7;
+  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to right, #ffdde1, #ee9ca7);
+  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to right, #ffdde1, #ee9ca7);
+  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+  min-height: 100vh;
+  color: var(--text-primary);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+/* Glassmorphism Card Override */
+.card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s ease;
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25);
+  border-color: #fff;
 }
 
-.course-card .card-body {
-  padding: 1.5rem;
+/* Button Overrides */
+.btn {
+  border-radius: 12px !important;
+  padding: 10px 24px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease !important;
+  border: none;
 }
 
-.course-card .card-title {
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.6);
+}
+
+/* Form Controls */
+.form-control {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+}
+
+.form-control:focus {
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Navbar */
+.navbar {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-brand {
   font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
+  color: var(--primary-color) !important;
+  font-size: 1.5rem;
 }
 
-.course-card .card-subtitle {
-  font-weight: 500;
-  color: #7f8c8d;
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-primary);
+  font-weight: 700;
   margin-bottom: 1rem;
 }
 
-.page-title {
-  font-weight: 800;
-  color: #2c3e50;
-  margin-bottom: 2rem;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+p {
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
-/* Dark mode adjustments would go here if needed */
-@media (prefers-color-scheme: dark) {
-  .course-card {
-    background: #2a2a2a;
-    color: #fff;
-  }
-  .course-card .card-title {
-    color: #fff;
-  }
-  .course-card .card-subtitle {
-     color: #aaa;
-  }
-  .page-title {
-    color: #fff;
-  }
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.3);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.6);
 }

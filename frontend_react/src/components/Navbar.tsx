@@ -13,7 +13,7 @@ const NavBar: React.FC = () => {
   };
 
   return (
-    <Navbar bg="light" expand="lg" className="mb-4 shadow-sm">
+    <Navbar expand="lg" className="mb-4 navbar-glass sticky-top">
       <Container>
         <Navbar.Brand as={Link} to="/">Attendance System</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />

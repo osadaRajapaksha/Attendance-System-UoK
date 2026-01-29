@@ -61,6 +61,38 @@ public class CourseController {
         return courseService.enrollStudent(courseId, id);
     }
 
+    @DeleteMapping("/{courseId}/unenroll/{studentId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
+    public void unenrollStudent(@PathVariable String courseId, @PathVariable String studentId,
+            Authentication authentication) {
+        String username = authentication.getName();
+
+        // Authorization Check
+        boolean isTeacher = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER"));
+
+        if (isTeacher) {
+            // Teacher can only remove students from THEIR course
+            Course course = courseService.getCourseById(courseId);
+            Teacher teacher = teacherRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("Teacher not found"));
+
+            if (!course.getTeacherId().equals(teacher.getId())) {
+                throw new RuntimeException("You are not the teacher of this course");
+            }
+        } else {
+            // Student can only remove THEMSELVES
+            Student student = studentRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("Student not found"));
+
+            if (!student.getId().equals(studentId)) {
+                throw new RuntimeException("You cannot unenroll another student");
+            }
+        }
+
+        courseService.unenrollStudent(courseId, studentId);
+    }
+
     @GetMapping("/teacher")
     @PreAuthorize("hasRole('TEACHER')")
     public List<Course> getMyCourses(Principal principal) {

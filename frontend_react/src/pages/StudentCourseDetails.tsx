@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Badge, Spinner, Alert, Tabs, Tab, Button, Row, Col } from 'react-bootstrap';
+import { Container, Card, Badge, Spinner, Alert, Tabs, Tab, Button, Row, Col, Modal } from 'react-bootstrap';
 import api from '../api/axios';
+import { AuthContext } from '../context/AuthContext';
 
-// Interfaces (reuse or import if shared)
+// Interfaces
 interface Session {
     id: string;
     courseId: string;
@@ -56,13 +57,16 @@ const Countdown = ({ targetDate, onComplete }: { targetDate: string, onComplete?
 const StudentCourseDetails: React.FC = () => {
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
     
     const [course, setCourse] = useState<Course | null>(null);
     const [sessions, setSessions] = useState<Session[]>([]);
     const [markedSessionIds, setMarkedSessionIds] = useState<string[]>([]);
+    const [markingSessionId, setMarkingSessionId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [msg, setMsg] = useState('');
+    const [showUnenrollModal, setShowUnenrollModal] = useState(false);
 
     const fetchData = async () => {
         setLoading(prev => sessions.length === 0);
@@ -88,17 +92,33 @@ const StudentCourseDetails: React.FC = () => {
         if (courseId) fetchData();
     }, [courseId]);
 
+    const handleUnenroll = async () => {
+        try {
+            await api.delete(`/api/courses/${courseId}/unenroll/${user?.id}`);
+            setShowUnenrollModal(false);
+            alert("Unenrolled successfully");
+            navigate('/student-dashboard');
+        } catch (err: any) {
+            console.error(err);
+            setError("Failed to unenroll.");
+            setShowUnenrollModal(false);
+        }
+    };
+
     const markAttendance = async (sessionId: string) => {
+        setMsg('');
+        setError('');
+        setMarkingSessionId(sessionId);
+        
         if (!navigator.geolocation) {
             setError("Geolocation is not supported by your browser.");
+            setMarkingSessionId(null);
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 try {
-                    setMsg('');
-                    setError('');
                     const { latitude, longitude } = position.coords;
                     await api.post('/api/sessions/mark', {
                         sessionId,
@@ -110,11 +130,14 @@ const StudentCourseDetails: React.FC = () => {
                 } catch (err: any) {
                     console.error(err);
                     setError(err.response?.data?.message || "Failed to mark attendance.");
+                } finally {
+                    setMarkingSessionId(null);
                 }
             },
             (err) => {
                 console.error(err);
                 setError("Unable to retrieve location. Please allow location access.");
+                setMarkingSessionId(null);
             }
         );
     };
@@ -137,6 +160,7 @@ const StudentCourseDetails: React.FC = () => {
                            <h3>{course.name} <Badge bg="info">{course.code}</Badge></h3>
                            <p className="text-muted mb-0">Teacher: {course.teacherName}</p>
                         </div>
+                        <Button variant="danger" onClick={() => setShowUnenrollModal(true)}>Unenroll</Button>
                     </div>
                 </Card.Body>
             </Card>
@@ -162,8 +186,26 @@ const StudentCourseDetails: React.FC = () => {
                                                 Marked
                                             </Button>
                                         ) : (
-                                            <Button variant="success" onClick={() => markAttendance(session.id)}>
-                                                Mark Attendance
+                                            <Button 
+                                                variant="success" 
+                                                onClick={() => markAttendance(session.id)}
+                                                disabled={markingSessionId === session.id}
+                                            >
+                                                {markingSessionId === session.id ? (
+                                                    <>
+                                                        <Spinner
+                                                            as="span"
+                                                            animation="border"
+                                                            size="sm"
+                                                            role="status"
+                                                            aria-hidden="true"
+                                                            className="me-2"
+                                                        />
+                                                        Marking...
+                                                    </>
+                                                ) : (
+                                                    'Mark Attendance'
+                                                )}
                                             </Button>
                                         )}
                                     </Card.Body>
@@ -212,6 +254,26 @@ const StudentCourseDetails: React.FC = () => {
                     </Row>
                 </Tab>
             </Tabs>
+
+            {/* Unenroll Confirmation Modal */}
+            <Modal show={showUnenrollModal} onHide={() => setShowUnenrollModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirm Unenrollment</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Are you sure you want to unenroll from <strong>{course.name}</strong>?
+                    <br />
+                    <span className="text-danger small">You will lose access to all session history for this course.</span>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowUnenrollModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={handleUnenroll}>
+                        Yes, Unenroll
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Container>
     );
 };

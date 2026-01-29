@@ -58,6 +58,19 @@ const TeacherCourseDetails: React.FC = () => {
         }
     };
 
+    const handleRemoveStudent = async (studentId: string) => {
+        if (!window.confirm("Are you sure you want to remove this student from the course?")) return;
+        
+        try {
+            await api.delete(`/api/courses/${courseId}/unenroll/${studentId}`);
+            alert("Student removed successfully.");
+            fetchCourseDetails(); // Refresh list
+        } catch (err) {
+            console.error(err);
+            alert("Failed to remove student.");
+        }
+    };
+
     if (loading) return <Container className="mt-5 text-center"><Spinner animation="border" /></Container>;
     if (error) return <Container className="mt-5"><Alert variant="danger">{error}</Alert></Container>;
     if (!course) return <Container className="mt-5"><Alert variant="warning">Course not found</Alert></Container>;
@@ -108,6 +121,7 @@ const TeacherCourseDetails: React.FC = () => {
                                         <tr>
                                             <th>Name</th>
                                             <th>Student ID</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -115,6 +129,15 @@ const TeacherCourseDetails: React.FC = () => {
                                             <tr key={stu.id}>
                                                 <td>{stu.fullName}</td>
                                                 <td>{stu.studentId}</td>
+                                                <td>
+                                                    <Button 
+                                                        variant="danger" 
+                                                        size="sm"
+                                                        onClick={() => handleRemoveStudent(stu.id)}
+                                                    >
+                                                        Remove
+                                                    </Button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

@@ -22,10 +22,14 @@ const StudentSessions: React.FC = () => {
         }
     };
 
+    const [markingSessionId, setMarkingSessionId] = useState<string | null>(null);
+
     const markAttendance = async (sessionId: string) => {
         setMsg(null);
+        setMarkingSessionId(sessionId);
         if (!navigator.geolocation) {
             setMsg({type: 'danger', text: 'Geolocation is not supported by your browser'});
+            setMarkingSessionId(null);
             return;
         }
 
@@ -41,9 +45,12 @@ const StudentSessions: React.FC = () => {
                 // Disable button or refresh
             } catch (err: any) {
                 setMsg({type: 'danger', text: err.response?.data?.message || 'Failed to mark attendance'});
+            } finally {
+                setMarkingSessionId(null);
             }
         }, (err) => {
             setMsg({type: 'danger', text: 'Unable to retrieve your location'});
+            setMarkingSessionId(null);
         });
     };
 
@@ -59,7 +66,13 @@ const StudentSessions: React.FC = () => {
                     {new Date(session.startTime).toLocaleString()} - {new Date(session.endTime).toLocaleString()}
                 </Card.Subtitle>
                 {showMark && (
-                    <Button variant="success" onClick={() => markAttendance(session.id)}>Mark Attendance</Button>
+                    <Button 
+                        variant="success" 
+                        onClick={() => markAttendance(session.id)}
+                        disabled={markingSessionId === session.id}
+                    >
+                        {markingSessionId === session.id ? 'Marking...' : 'Mark Attendance'}
+                    </Button>
                 )}
             </Card.Body>
         </Card>

@@ -11,6 +11,8 @@ public interface CourseService {
 
     Course enrollStudent(String courseId, String studentId);
 
+    void unenrollStudent(String courseId, String studentId);
+
     List<Course> getCoursesByTeacher(String teacherId);
 
     List<CourseBasicResponse> getAllCourses();

@@ -9,7 +9,7 @@ const containerStyle = {
   height: '400px'
 };
 
-const center = {
+const defaultCenter = {
   lat: 7.2906, 
   lng: 80.6337
 };
@@ -22,11 +22,32 @@ const TeacherSessionCreate: React.FC = () => {
     const [weekly, setWeekly] = useState(false);
     const [boundary, setBoundary] = useState<{lat: number, lng: number}[]>([]);
     
+    // Map Center State
+    const [mapCenter, setMapCenter] = useState(defaultCenter);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     
     const navigate = useNavigate();
+
+    // Fetch user location on mount
+    React.useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setMapCenter({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                },
+                (err) => {
+                    console.error("Error getting location: ", err);
+                    // Fallback to default center if location access denied/fails
+                }
+            );
+        }
+    }, []);
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -127,7 +148,7 @@ const TeacherSessionCreate: React.FC = () => {
                   <Form.Label>Draw Session Area (Rectangle)</Form.Label>
                   <GoogleMap
                     mapContainerStyle={containerStyle}
-                    center={center}
+                    center={mapCenter}
                     zoom={15}
                     onLoad={onLoad}
                     onUnmount={onUnmount}

@@ -104,6 +104,19 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    public void unenrollStudent(String courseId, String studentId) {
+        // Remove studentId from course.studentIds (atomic)
+        Query q1 = new Query(Criteria.where("_id").is(courseId));
+        Update u1 = new Update().pull("studentIds", studentId);
+        mongoTemplate.updateFirst(q1, u1, Course.class);
+
+        // Remove courseId from student.courseIds (atomic)
+        Query q2 = new Query(Criteria.where("_id").is(studentId));
+        Update u2 = new Update().pull("courseIds", courseId);
+        mongoTemplate.updateFirst(q2, u2, Student.class);
+    }
+
+    @Override
     public List<Course> getCoursesByTeacher(String teacherId) {
         return courseRepository.findByTeacherId(teacherId);
     }
