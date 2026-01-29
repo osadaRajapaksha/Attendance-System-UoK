@@ -29,7 +29,6 @@ const Register: React.FC = () => {
     fullName: '',
     email: '',
     password: '',
-    department: '',
     faculty: 'Science',
     degreeProgram: '',
     studentId: ''
@@ -152,16 +151,7 @@ const Register: React.FC = () => {
             </Form.Text>
           </Form.Group>
 
-           <Form.Group className="mb-3">
-            <Form.Label>Department</Form.Label>
-            <Form.Control 
-              type="text" 
-              name="department"
-              placeholder="Department" 
-              value={formData.department}
-              onChange={handleChange}
-            />
-          </Form.Group>
+
 
           <Form.Group className="mb-3">
             <Form.Label>Faculty</Form.Label>

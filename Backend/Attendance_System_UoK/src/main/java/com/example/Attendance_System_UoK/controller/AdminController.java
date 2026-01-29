@@ -36,4 +36,12 @@ public class AdminController {
         adminService.deleteUser(id);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/students")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> createStudent(
+            @RequestBody com.example.Attendance_System_UoK.dto.RegisterRequest request) {
+        adminService.createStudent(request);
+        return ResponseEntity.ok().build();
+    }
 }
