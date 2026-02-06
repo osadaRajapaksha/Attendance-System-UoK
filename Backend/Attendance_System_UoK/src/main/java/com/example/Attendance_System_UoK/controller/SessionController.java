@@ -2,6 +2,7 @@ package com.example.Attendance_System_UoK.controller;
 
 import com.example.Attendance_System_UoK.dto.MarkAttendanceRequest;
 import com.example.Attendance_System_UoK.dto.SessionRequest;
+import com.example.Attendance_System_UoK.dto.SessionUpdateRequest;
 import com.example.Attendance_System_UoK.dto.UserResponse;
 import com.example.Attendance_System_UoK.model.Attendance;
 import com.example.Attendance_System_UoK.model.Session;
@@ -72,5 +73,19 @@ public class SessionController {
         String username = authentication.getName();
         UserResponse user = userService.getUserByUsername(username);
         return ResponseEntity.ok(sessionService.markAttendance(user.getId(), request));
+    }
+
+    @PutMapping("/update/{sessionId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Session> updateSession(@PathVariable String sessionId,
+            @RequestBody SessionUpdateRequest request) {
+        return ResponseEntity.ok(sessionService.updateSession(sessionId, request));
+    }
+
+    @DeleteMapping("/{sessionId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteSession(@PathVariable String sessionId) {
+        sessionService.deleteSession(sessionId);
+        return ResponseEntity.ok().build();
     }
 }

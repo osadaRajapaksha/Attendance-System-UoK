@@ -20,7 +20,40 @@ const TeacherSessionCreate: React.FC = () => {
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [weekly, setWeekly] = useState(false);
+    const [recurrenceStartDate, setRecurrenceStartDate] = useState('');
+    const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+    const [scheduledDates, setScheduledDates] = useState<string[]>([]);
     const [boundary, setBoundary] = useState<{lat: number, lng: number}[]>([]);
+
+    // Effect to calculate scheduled dates
+    React.useEffect(() => {
+        if (weekly && startTime && recurrenceStartDate && recurrenceEndDate) {
+            const dates: string[] = [];
+            let current = new Date(recurrenceStartDate);
+            // Ensure first session starts at correct time on the start date
+            const startDateTime = new Date(startTime);
+            current.setHours(startDateTime.getHours(), startDateTime.getMinutes());
+
+            const end = new Date(recurrenceEndDate);
+            end.setHours(23, 59, 59); // Include the end date fully
+
+            while (current <= end) {
+                dates.push(current.toISOString());
+                current.setDate(current.getDate() + 7); // Add 7 days
+            }
+            setScheduledDates(dates);
+        } else {
+            setScheduledDates([]);
+        }
+    }, [weekly, startTime, recurrenceStartDate, recurrenceEndDate]);
+
+    // Initialize recurrence start date when start time changes
+    React.useEffect(() => {
+        if (startTime) {
+             // For simplicity, default recurrence start is the session start date
+             setRecurrenceStartDate(startTime.split('T')[0]);
+        }
+    }, [startTime]);
     
     // Map Center State
     const [mapCenter, setMapCenter] = useState(defaultCenter);
@@ -105,6 +138,7 @@ const TeacherSessionCreate: React.FC = () => {
                 startTime,
                 endTime,
                 weekly,
+                recurrenceEndDate: weekly && recurrenceEndDate ? new Date(recurrenceEndDate).toISOString() : null,
                 boundary
             });
             setSuccess("Session created successfully!");
@@ -141,8 +175,51 @@ const TeacherSessionCreate: React.FC = () => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                  <Form.Check type="checkbox" label="Weekly Schedule?" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} />
+                  <Form.Check 
+                      type="checkbox" 
+                      label="Weekly Schedule?" 
+                      checked={weekly} 
+                      onChange={(e) => setWeekly(e.target.checked)} 
+                  />
               </Form.Group>
+
+              {weekly && (
+                  <div className="mb-4 ps-3 border-start border-primary">
+                      <Form.Group className="mb-3">
+                          <Form.Label>Recurrence Start Date</Form.Label>
+                          <Form.Control 
+                              type="date" 
+                              value={recurrenceStartDate} 
+                              onChange={(e) => setRecurrenceStartDate(e.target.value)} 
+                              min={startTime ? startTime.split('T')[0] : ''}
+                              required 
+                          />
+                          <Form.Text className="text-muted">Sessions will be scheduled weekly starting from this date.</Form.Text>
+                      </Form.Group>
+
+                      <Form.Group className="mb-3">
+                          <Form.Label>Recurrence End Date</Form.Label>
+                          <Form.Control 
+                              type="date" 
+                              value={recurrenceEndDate} 
+                              onChange={(e) => setRecurrenceEndDate(e.target.value)} 
+                              min={recurrenceStartDate || (startTime ? startTime.split('T')[0] : '')}
+                              required 
+                          />
+                      </Form.Group>
+
+                      {scheduledDates.length > 0 && (
+                          <div className="mb-3">
+                              <strong>Scheduled Dates Preview ({scheduledDates.length} sessions):</strong>
+                              <ul className="mt-2" style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                                  {scheduledDates.map((date, idx) => (
+                                      <li key={idx}>{new Date(date).toDateString()}</li>
+                                  ))}
+                              </ul>
+                          </div>
+                      )}
+                  </div>
+              )}
               
               <Form.Group className="mb-3">
                   <Form.Label>Draw Session Area (Rectangle)</Form.Label>

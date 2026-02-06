@@ -2,6 +2,7 @@ package com.example.Attendance_System_UoK.service;
 
 import com.example.Attendance_System_UoK.dto.MarkAttendanceRequest;
 import com.example.Attendance_System_UoK.dto.SessionRequest;
+import com.example.Attendance_System_UoK.dto.SessionUpdateRequest;
 import com.example.Attendance_System_UoK.model.Attendance;
 import com.example.Attendance_System_UoK.model.Session;
 import com.example.Attendance_System_UoK.model.GeoPoint;
@@ -56,17 +57,27 @@ public class SessionService {
         createdSessions.add(sessionRepository.save(session));
 
         if (request.isWeekly()) {
-            // Create for next 11 weeks (total 12)
-            for (int i = 1; i < 12; i++) {
+            LocalDateTime nextStart = request.getStartTime().plusWeeks(1);
+            LocalDateTime nextEnd = request.getEndTime().plusWeeks(1);
+            LocalDateTime limitDate = request.getRecurrenceEndDate() != null
+                    ? request.getRecurrenceEndDate()
+                    : request.getStartTime().plusWeeks(12); // Fallback to 12 weeks if null
+
+            int weekCount = 2;
+            while (!nextStart.isAfter(limitDate)) {
                 Session nextSession = new Session();
                 nextSession.setCourseId(request.getCourseId());
                 nextSession.setTeacherId(teacherId);
-                nextSession.setTitle(request.getTitle() + " (Week " + (i + 1) + ")");
-                nextSession.setStartTime(request.getStartTime().plusWeeks(i));
-                nextSession.setEndTime(request.getEndTime().plusWeeks(i));
+                nextSession.setTitle(request.getTitle() + " (Week " + weekCount + ")");
+                nextSession.setStartTime(nextStart);
+                nextSession.setEndTime(nextEnd);
                 nextSession.setBoundary(request.getBoundary());
                 nextSession.setStatus(SessionStatus.SCHEDULED);
                 createdSessions.add(sessionRepository.save(nextSession));
+
+                nextStart = nextStart.plusWeeks(1);
+                nextEnd = nextEnd.plusWeeks(1);
+                weekCount++;
             }
         }
 
@@ -132,8 +143,49 @@ public class SessionService {
         return attendanceRepository.save(attendance);
     }
 
+    public Session updateSession(String sessionId, SessionUpdateRequest request) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
+
+        if (request.getTitle() != null && !request.getTitle().isEmpty()) {
+            session.setTitle(request.getTitle());
+        }
+        if (request.getStartTime() != null) {
+            session.setStartTime(request.getStartTime());
+        }
+        if (request.getEndTime() != null) {
+            session.setEndTime(request.getEndTime());
+        }
+        if (request.getBoundary() != null && !request.getBoundary().isEmpty()) {
+            session.setBoundary(request.getBoundary());
+        }
+
+        // Re-evaluate status in case times changed
+        updateSessionStatus(session);
+
+        return sessionRepository.save(session);
+    }
+
+    public void deleteSession(String sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
+
+        if (session.getStatus() != SessionStatus.SCHEDULED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot delete session. Only SCHEDULED sessions can be deleted. Current status: "
+                            + session.getStatus());
+        }
+
+        session.setStatus(SessionStatus.DELETED);
+        sessionRepository.save(session);
+    }
+
     // Check status based on time
     private void updateSessionStatus(Session session) {
+        if (session.getStatus() == SessionStatus.DELETED) {
+            return;
+        }
+
         LocalDateTime now = LocalDateTime.now(systemSettingService.getSystemTimezone());
         if (now.isBefore(session.getStartTime())) {
             session.setStatus(SessionStatus.SCHEDULED);
