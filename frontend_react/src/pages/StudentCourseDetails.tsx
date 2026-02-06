@@ -69,6 +69,10 @@ const StudentCourseDetails: React.FC = () => {
     const [showUnenrollModal, setShowUnenrollModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+    // History Modal State
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [selectedHistorySession, setSelectedHistorySession] = useState<Session | null>(null);
+
     const fetchData = async () => {
         setLoading(prev => sessions.length === 0);
         try {
@@ -103,6 +107,11 @@ const StudentCourseDetails: React.FC = () => {
             setError("Failed to unenroll.");
             setShowUnenrollModal(false);
         }
+    };
+
+    const handleHistoryClick = (session: Session) => {
+        setSelectedHistorySession(session);
+        setShowHistoryModal(true);
     };
 
     const markAttendance = async (sessionId: string) => {
@@ -168,7 +177,94 @@ const StudentCourseDetails: React.FC = () => {
             {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
             {msg && <Alert variant="success" dismissible onClose={() => setMsg('')}>{msg}</Alert>}
 
-            <h4 className="mb-3">Sessions</h4>
+            {/* Statistics Section */}
+            {!loading && (
+                <div className="mb-4">
+                    <h4 className="mb-3">Attendance Overview</h4>
+                    <Row className="g-3">
+                        {/* Percentage Card */}
+                        <Col md={3}>
+                            <Card className="h-100 text-center shadow-sm border-0 bg-primary text-white">
+                                <Card.Body className="d-flex flex-column justify-content-center align-items-center">
+                                    <h6 className="opacity-75">Attendance Rate</h6>
+                                    <h1 className="display-4 fw-bold mb-0">
+                                        {(() => {
+                                            const pastSessions = sessions.filter(s => s.status === 'EXPIRED');
+                                            const presentCount = pastSessions.filter(s => markedSessionIds.includes(s.id)).length;
+                                            const total = pastSessions.length;
+                                            return total > 0 ? Math.round((presentCount / total) * 100) : 0;
+                                        })()}%
+                                    </h1>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        
+                        {/* Stats Grid */}
+                        <Col md={9}>
+                            <Row className="g-3 h-100">
+                                <Col sm={4}>
+                                    <Card className="h-100 shadow-sm border-0 border-start border-success border-4">
+                                        <Card.Body>
+                                            <div className="text-secondary small mb-1">Present Sessions</div>
+                                            <h3 className="fw-bold text-success mb-0">
+                                                {sessions.filter(s => s.status === 'EXPIRED' && markedSessionIds.includes(s.id)).length}
+                                            </h3>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                <Col sm={4}>
+                                    <Card className="h-100 shadow-sm border-0 border-start border-danger border-4">
+                                        <Card.Body>
+                                            <div className="text-secondary small mb-1">Absent Sessions</div>
+                                            <h3 className="fw-bold text-danger mb-0">
+                                                {(() => {
+                                                    const pastSessions = sessions.filter(s => s.status === 'EXPIRED');
+                                                    const presentCount = pastSessions.filter(s => markedSessionIds.includes(s.id)).length;
+                                                    return pastSessions.length - presentCount;
+                                                })()}
+                                            </h3>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                <Col sm={4}>
+                                    <Card className="h-100 shadow-sm border-0 border-start border-info border-4">
+                                        <Card.Body>
+                                            <div className="text-secondary small mb-1">Total Sessions</div>
+                                            <h3 className="fw-bold text-dark mb-0">
+                                                {sessions.filter(s => s.status === 'EXPIRED').length}
+                                            </h3>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                <Col sm={12}>
+                                    <Card className="h-100 shadow-sm border-0">
+                                        <Card.Body className="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div className="text-secondary small">Last Marked Date</div>
+                                                <div className="fw-bold">
+                                                    {(() => {
+                                                        const markedSessions = sessions
+                                                            .filter(s => markedSessionIds.includes(s.id))
+                                                            .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+                                                        return markedSessions.length > 0 
+                                                            ? new Date(markedSessions[0].startTime).toLocaleDateString() + " " + new Date(markedSessions[0].startTime).toLocaleTimeString()
+                                                            : "N/A";
+                                                    })()}
+                                                </div>
+                                            </div>
+                                            <div className="text-success bg-success bg-opacity-10 p-2 rounded-circle">
+                                                <i className="bi bi-calendar-check fs-4"></i>
+                                            </div>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                            </Row>
+                        </Col>
+                    </Row>
+                </div>
+            )}
+
+            <h4 className="mb-3">Sessions Details</h4>
             <Tabs defaultActiveKey="active" className="mb-3">
                 <Tab eventKey="active" title={`Active (${categorizeSessions('ACTIVE').length})`}>
                     <Row className="g-3">
@@ -240,12 +336,23 @@ const StudentCourseDetails: React.FC = () => {
                         {categorizeSessions('EXPIRED').length === 0 && <Col><p className="text-muted">No past sessions.</p></Col>}
                          {categorizeSessions('EXPIRED').map(session => (
                             <Col md={6} key={session.id}>
-                                <Card className="bg-light text-muted">
+                                <Card 
+                                    className="bg-light text-muted h-100" 
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => handleHistoryClick(session)}
+                                >
                                     <Card.Body>
-                                        <Card.Title>{session.title}</Card.Title>
-                                        <Card.Text>
-                                            Ended: {new Date(session.endTime).toLocaleString()}
-                                        </Card.Text>
+                                        <div className="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <Card.Title>{session.title}</Card.Title>
+                                                <Card.Text>
+                                                    Ended: {new Date(session.endTime).toLocaleString()}
+                                                </Card.Text>
+                                            </div>
+                                            {markedSessionIds.includes(session.id) && (
+                                                <i className="bi bi-check-circle-fill text-success" title="Attended"></i>
+                                            )}
+                                        </div>
                                         <Badge bg="secondary">Expired</Badge>
                                     </Card.Body>
                                 </Card>
@@ -272,6 +379,40 @@ const StudentCourseDetails: React.FC = () => {
                     <Button variant="danger" onClick={handleUnenroll}>
                         Yes, Unenroll
                     </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* History Status Modal */}
+            <Modal show={showHistoryModal} onHide={() => setShowHistoryModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Attendance Status</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center">
+                    {selectedHistorySession && (
+                        <>
+                            <h5 className="mb-3">{selectedHistorySession.title}</h5>
+                            <p className="text-muted mb-4">
+                                {new Date(selectedHistorySession.startTime).toLocaleString()}
+                            </p>
+                            
+                            {markedSessionIds.includes(selectedHistorySession.id) ? (
+                                <div className="text-success">
+                                    <i className="bi bi-check-circle-fill" style={{ fontSize: '4rem' }}></i>
+                                    <h4 className="mt-3">Present</h4>
+                                    <p>You marked attendance for this session.</p>
+                                </div>
+                            ) : (
+                                <div className="text-danger">
+                                    <i className="bi bi-x-circle-fill" style={{ fontSize: '4rem' }}></i>
+                                    <h4 className="mt-3">Absent</h4>
+                                    <p>No attendance record found.</p>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                     <Button variant="secondary" onClick={() => setShowHistoryModal(false)}>Close</Button>
                 </Modal.Footer>
             </Modal>
 
