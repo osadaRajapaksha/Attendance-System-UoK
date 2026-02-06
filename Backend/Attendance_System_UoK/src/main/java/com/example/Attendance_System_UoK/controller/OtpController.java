@@ -27,7 +27,7 @@ public class OtpController {
 
         if (email == null || !MICROSOFT_DOMAIN_PATTERN.matcher(email).matches()) {
             return ResponseEntity.badRequest()
-                    .body("Invalid email domain. Only Microsoft accounts and University emails are allowed.");
+                    .body("Invalid email domain. Only  University emails are allowed.");
         }
 
         try {

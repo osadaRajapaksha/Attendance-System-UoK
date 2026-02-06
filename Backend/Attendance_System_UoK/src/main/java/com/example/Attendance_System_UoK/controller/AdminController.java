@@ -44,4 +44,13 @@ public class AdminController {
         adminService.createStudent(request);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/students/search")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> searchStudents(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String faculty,
+            @RequestParam(required = false) String degree) {
+        return ResponseEntity.ok(adminService.searchStudents(query, faculty, degree));
+    }
 }

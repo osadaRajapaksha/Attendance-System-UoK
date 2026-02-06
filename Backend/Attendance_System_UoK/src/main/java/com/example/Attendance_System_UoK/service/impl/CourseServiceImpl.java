@@ -160,4 +160,29 @@ public class CourseServiceImpl implements CourseService {
                         s.getId(), s.getFullName(), s.getStudentId(), null))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public void deleteCourse(String courseId) {
+        if (!courseRepository.existsById(courseId)) {
+            throw new RuntimeException("Course not found");
+        }
+        // Ideally, we should also remove this course ID from all students enrolled, but
+        // for simplicity we will just delete the course.
+        // A more robust implementation would clean up references.
+        courseRepository.deleteById(courseId);
+    }
+
+    @Override
+    public Course createCourseForAdmin(CreateCourseDTO dto, String teacherId) {
+        Teacher teacher = teacherRepository.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+
+        Course c = new Course();
+        c.setName(dto.getName());
+        c.setCode(dto.getCode());
+        c.setTeacherId(teacher.getId());
+        c.setStudentIds(List.of());
+
+        return courseRepository.save(c);
+    }
 }

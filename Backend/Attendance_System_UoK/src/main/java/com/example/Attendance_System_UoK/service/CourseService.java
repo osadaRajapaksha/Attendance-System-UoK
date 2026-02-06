@@ -22,4 +22,8 @@ public interface CourseService {
     Course getCourseById(String courseId);
 
     List<com.example.Attendance_System_UoK.dto.StudentBasicInfo> getEnrolledStudents(String courseId);
+
+    void deleteCourse(String courseId);
+
+    Course createCourseForAdmin(CreateCourseDTO dto, String teacherId);
 }

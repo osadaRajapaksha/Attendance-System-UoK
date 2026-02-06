@@ -65,6 +65,18 @@ public class AdminService {
         }
     }
 
+    public List<UserResponse> searchStudents(String query, String faculty, String degreeProgram) {
+        String searchQuery = query == null ? "" : query;
+        String searchFaculty = (faculty == null || faculty.isEmpty() || faculty.equals("All")) ? "" : faculty;
+        String searchDegree = (degreeProgram == null || degreeProgram.isEmpty() || degreeProgram.equals("All")) ? ""
+                : degreeProgram;
+
+        return studentRepository.searchStudents(searchQuery, searchFaculty, searchDegree)
+                .stream()
+                .map(this::mapToUserResponse)
+                .collect(Collectors.toList());
+    }
+
     public void createStudent(com.example.Attendance_System_UoK.dto.RegisterRequest request) {
         if (studentRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");

@@ -116,9 +116,23 @@ public class CourseController {
     }
 
     @GetMapping("/{courseId}/students")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public List<com.example.Attendance_System_UoK.dto.StudentBasicInfo> getEnrolledStudents(
             @PathVariable String courseId) {
         return courseService.getEnrolledStudents(courseId);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteCourse(@PathVariable String id) {
+        courseService.deleteCourse(id);
+    }
+
+    @PostMapping("/admin/create")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Course createCourseForAdmin(
+            @Valid @RequestBody CreateCourseDTO dto,
+            @RequestParam String teacherId) {
+        return courseService.createCourseForAdmin(dto, teacherId);
     }
 }

@@ -14,6 +14,9 @@ const AdminDashboard: React.FC = () => {
                 <Tab eventKey="teachers" title="Manage Teachers">
                     <TeacherManager />
                 </Tab>
+                <Tab eventKey="courses" title="Manage Courses">
+                    <CourseManager />
+                </Tab>
                 <Tab eventKey="students" title="Manage Students">
                     <StudentManager />
                 </Tab>
@@ -101,6 +104,155 @@ const TeacherManager = () => {
     );
 };
 
+interface Course {
+    id: string;
+    name: string;
+    code: string;
+    teacherName: string;
+}
+
+const CourseManager = () => {
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [teachers, setTeachers] = useState<any[]>([]); // simplified for now
+    const [loading, setLoading] = useState(false);
+    const [msg, setMsg] = useState({ type: '', content: '' });
+    
+    // Create Form State
+    const [formData, setFormData] = useState({
+        name: '',
+        code: '',
+        teacherId: ''
+    });
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [coursesRes, usersRes] = await Promise.all([
+                api.get('/api/courses'),
+                api.get('/api/admin/all')
+            ]);
+            setCourses(coursesRes.data);
+            setTeachers(usersRes.data.filter((u: any) => u.role === 'ROLE_TEACHER'));
+        } catch (err) {
+            console.error(err);
+            setMsg({ type: 'danger', content: 'Failed to fetch data' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | any>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleCreateCourse = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setMsg({ type: '', content: '' });
+        try {
+            await api.post(`/api/courses/admin/create?teacherId=${formData.teacherId}`, {
+                name: formData.name,
+                code: formData.code
+            });
+            setMsg({ type: 'success', content: 'Course created successfully' });
+            setFormData({ name: '', code: '', teacherId: '' });
+            fetchData();
+        } catch (err: any) {
+            console.error(err);
+            setMsg({ type: 'danger', content: err.response?.data?.message || 'Failed to create course' });
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Are you sure you want to delete this course?")) return;
+        try {
+            await api.delete(`/api/courses/${id}`);
+            setCourses(prev => prev.filter(c => c.id !== id));
+            setMsg({ type: 'success', content: 'Course deleted successfully' });
+        } catch (err) {
+            console.error(err);
+            setMsg({ type: 'danger', content: 'Failed to delete course' });
+        }
+    };
+
+    return (
+        <Row>
+            <Col lg={4} className="mb-4">
+                 <Card className="shadow-sm">
+                    <Card.Header className="bg-primary text-white">Create New Course</Card.Header>
+                    <Card.Body>
+                        {msg.content && <Alert variant={msg.type} dismissible onClose={() => setMsg({ type: '', content: '' })}>{msg.content}</Alert>}
+                        <Form onSubmit={handleCreateCourse}>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Course Name</Form.Label>
+                                <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} required />
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Course Code</Form.Label>
+                                <Form.Control type="text" name="code" value={formData.code} onChange={handleChange} required />
+                            </Form.Group>
+                             <Form.Group className="mb-3">
+                                <Form.Label>Assign Teacher</Form.Label>
+                                <Form.Select name="teacherId" value={formData.teacherId} onChange={handleChange} required>
+                                    <option value="">Select Teacher</option>
+                                    {teachers.map(t => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+                                </Form.Select>
+                            </Form.Group>
+                            <Button variant="primary" type="submit" className="w-100">Create Course</Button>
+                        </Form>
+                    </Card.Body>
+                </Card>
+            </Col>
+            
+            <Col lg={8}>
+                <Card className="shadow-sm">
+                    <Card.Header className="bg-white d-flex justify-content-between align-items-center">
+                        <span className="h5 mb-0">Course List</span>
+                        <Badge bg="secondary">{courses.length} Courses</Badge>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                        {loading ? (
+                            <div className="text-center p-5"><Spinner animation="border" /></div>
+                        ) : (
+                            <div className="table-responsive" style={{ maxHeight: '600px' }}>
+                                <Table hover striped className="mb-0">
+                                    <thead className="table-light sticky-top">
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Name</th>
+                                            <th>Teacher</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {courses.length === 0 ? (
+                                            <tr><td colSpan={4} className="text-center p-4 text-muted">No courses found.</td></tr>
+                                        ) : (
+                                            courses.map(course => (
+                                                <tr key={course.id}>
+                                                    <td><Badge bg="secondary">{course.code}</Badge></td>
+                                                    <td>{course.name}</td>
+                                                    <td>{course.teacherName}</td>
+                                                    <td>
+                                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(course.id)}>Delete</Button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        )}
+                    </Card.Body>
+                </Card>
+            </Col>
+        </Row>
+    );
+};
+
 interface Student {
     id: string;
     fullName: string;
@@ -120,6 +272,9 @@ const StudentManager = () => {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(false);
     const [msg, setMsg] = useState({ type: '', content: '' });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterFaculty, setFilterFaculty] = useState('');
+    const [filterDegree, setFilterDegree] = useState('');
     
     // Create Form State
     const [formData, setFormData] = useState({
@@ -145,9 +300,32 @@ const StudentManager = () => {
         }
     };
 
+    const handleSearch = async () => {
+        if (!searchQuery.trim() && !filterFaculty && !filterDegree) {
+            fetchStudents();
+            return;
+        }
+        setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (searchQuery) params.append('query', searchQuery);
+            if (filterFaculty) params.append('faculty', filterFaculty);
+            if (filterDegree) params.append('degree', filterDegree);
+
+            const res = await api.get(`/api/admin/students/search?${params.toString()}`);
+            setStudents(res.data);
+        } catch (err) {
+            console.error(err);
+            setMsg({ type: 'danger', content: 'Failed to search students' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        fetchStudents();
-    }, []);
+        handleSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterFaculty, filterDegree]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -243,7 +421,42 @@ const StudentManager = () => {
                 <Card className="shadow-sm">
                     <Card.Header className="bg-white d-flex justify-content-between align-items-center">
                         <span className="h5 mb-0">Student List</span>
-                        <Badge bg="secondary">{students.length} Students</Badge>
+                        <div className="d-flex align-items-center">
+                            <Form.Select 
+                                value={filterFaculty} 
+                                onChange={(e) => {
+                                    setFilterFaculty(e.target.value);
+                                    setFilterDegree('');
+                                }} 
+                                className="me-2" 
+                                style={{ maxWidth: '150px' }}
+                            >
+                                <option value="">All Faculties</option>
+                                {faculties.map(f => <option key={f} value={f}>{f}</option>)}
+                            </Form.Select>
+                            
+                            <Form.Select 
+                                value={filterDegree} 
+                                onChange={(e) => setFilterDegree(e.target.value)} 
+                                className="me-2"
+                                style={{ maxWidth: '180px' }}
+                                disabled={filterFaculty !== "Science" && filterFaculty !== ""}
+                            >
+                                <option value="">All Degrees</option>
+                                {scienceDegreePrograms.map(d => <option key={d} value={d}>{d}</option>)}
+                            </Form.Select>
+
+                            <InputGroup className="me-3" style={{ maxWidth: '300px' }}>
+                                <Form.Control
+                                    placeholder="Search Name / ID"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                />
+                                <Button variant="outline-primary" onClick={handleSearch}>Search</Button>
+                            </InputGroup>
+                            <Badge bg="secondary">{students.length} Students</Badge>
+                        </div>
                     </Card.Header>
                     <Card.Body className="p-0">
                         {loading ? (

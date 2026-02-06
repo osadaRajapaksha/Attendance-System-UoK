@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.repository.Update;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface StudentRepository extends MongoRepository<Student, String> {
@@ -20,4 +21,7 @@ public interface StudentRepository extends MongoRepository<Student, String> {
 
     @Query(value = "{ 'username': ?0 }", fields = "{ '_id': 1 }")
     String findIdByUsername(String username);
+
+    @Query("{ '$and': [ { '$or': [ { 'fullName': { '$regex': ?0, '$options': 'i' } }, { 'studentId': { '$regex': ?0, '$options': 'i' } } ] }, { 'faculty': { '$regex': ?1, '$options': 'i' } }, { 'degreeProgram': { '$regex': ?2, '$options': 'i' } } ] }")
+    List<Student> searchStudents(String query, String faculty, String degreeProgram);
 }
