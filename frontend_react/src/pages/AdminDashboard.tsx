@@ -121,7 +121,8 @@ const CourseManager = () => {
     const [formData, setFormData] = useState({
         name: '',
         code: '',
-        teacherId: ''
+        teacherId: '',
+        enrollmentKey: ''
     });
 
     const fetchData = async () => {
@@ -155,10 +156,11 @@ const CourseManager = () => {
         try {
             await api.post(`/api/courses/admin/create?teacherId=${formData.teacherId}`, {
                 name: formData.name,
-                code: formData.code
+                code: formData.code,
+                enrollmentKey: formData.enrollmentKey
             });
             setMsg({ type: 'success', content: 'Course created successfully' });
-            setFormData({ name: '', code: '', teacherId: '' });
+            setFormData({ name: '', code: '', teacherId: '', enrollmentKey: '' });
             fetchData();
         } catch (err: any) {
             console.error(err);
@@ -193,6 +195,10 @@ const CourseManager = () => {
                             <Form.Group className="mb-2">
                                 <Form.Label>Course Code</Form.Label>
                                 <Form.Control type="text" name="code" value={formData.code} onChange={handleChange} required />
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Enrollment Key (Optional)</Form.Label>
+                                <Form.Control type="text" name="enrollmentKey" value={formData.enrollmentKey} onChange={handleChange} placeholder="Leave empty if none" />
                             </Form.Group>
                              <Form.Group className="mb-3">
                                 <Form.Label>Assign Teacher</Form.Label>

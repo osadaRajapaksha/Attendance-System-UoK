@@ -10,6 +10,6 @@
 
 {
   "email": "madhuma-ec21071@stu.kln.ac.lk",
-  "password": "Password123!"
+  "password": "123"
 }
 mlzp buyi bneo samj

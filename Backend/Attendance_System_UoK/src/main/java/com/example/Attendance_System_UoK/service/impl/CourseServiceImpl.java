@@ -46,7 +46,8 @@ public class CourseServiceImpl implements CourseService {
                             course.getId(),
                             course.getName(),
                             course.getCode(),
-                            teacherName);
+                            teacherName,
+                            course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty());
                 })
                 .collect(Collectors.toList());
     }
@@ -66,6 +67,7 @@ public class CourseServiceImpl implements CourseService {
         c.setName(dto.getName());
         c.setCode(dto.getCode());
         c.setTeacherId(teacher.getId());
+        c.setEnrollmentKey(dto.getEnrollmentKey());
 
         // Set empty student list if null
         c.setStudentIds(
@@ -77,11 +79,17 @@ public class CourseServiceImpl implements CourseService {
     private MongoTemplate mongoTemplate;
 
     @Override
-    public Course enrollStudent(String courseId, String studentId) {
+    public Course enrollStudent(String courseId, String studentId, String enrollmentKey) {
 
         // Verify course exists
-        if (!courseRepository.existsById(courseId)) {
-            throw new RuntimeException("Course not found");
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        // Check Enrollment Key
+        if (course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty()) {
+            if (enrollmentKey == null || !enrollmentKey.equals(course.getEnrollmentKey())) {
+                throw new RuntimeException("Invalid Enrollment Key");
+            }
         }
 
         // Verify student exists
@@ -105,15 +113,31 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public void unenrollStudent(String courseId, String studentId) {
-        // Remove studentId from course.studentIds (atomic)
-        Query q1 = new Query(Criteria.where("_id").is(courseId));
-        Update u1 = new Update().pull("studentIds", studentId);
-        mongoTemplate.updateFirst(q1, u1, Course.class);
+        System.out.println("DEBUG: Unenrolling student " + studentId + " from course " + courseId);
 
-        // Remove courseId from student.courseIds (atomic)
-        Query q2 = new Query(Criteria.where("_id").is(studentId));
-        Update u2 = new Update().pull("courseIds", courseId);
-        mongoTemplate.updateFirst(q2, u2, Student.class);
+        // Remove studentId from course.studentIds
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        if (course.getStudentIds() != null && course.getStudentIds().contains(studentId)) {
+            course.getStudentIds().remove(studentId);
+            courseRepository.save(course);
+            System.out.println("DEBUG: Removed studentId from Course");
+        } else {
+            System.out.println("DEBUG: StudentId not found in Course");
+        }
+
+        // Remove courseId from student.courseIds
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        if (student.getCourseIds() != null && student.getCourseIds().contains(courseId)) {
+            student.getCourseIds().remove(courseId);
+            studentRepository.save(student);
+            System.out.println("DEBUG: Removed courseId from Student");
+        } else {
+            System.out.println("DEBUG: CourseId not found in Student");
+        }
     }
 
     @Override
@@ -137,7 +161,8 @@ public class CourseServiceImpl implements CourseService {
                             course.getId(),
                             course.getName(),
                             course.getCode(),
-                            teacherName);
+                            teacherName,
+                            course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty());
                 })
                 .collect(Collectors.toList());
     }
@@ -181,6 +206,7 @@ public class CourseServiceImpl implements CourseService {
         c.setName(dto.getName());
         c.setCode(dto.getCode());
         c.setTeacherId(teacher.getId());
+        c.setEnrollmentKey(dto.getEnrollmentKey());
         c.setStudentIds(List.of());
 
         return courseRepository.save(c);

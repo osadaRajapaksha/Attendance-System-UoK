@@ -15,7 +15,7 @@ const TeacherDashboard: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   
   // Form State
-  const [newCourse, setNewCourse] = useState({ name: '', code: '' });
+  const [newCourse, setNewCourse] = useState({ name: '', code: '', enrollmentKey: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -41,7 +41,7 @@ const TeacherDashboard: React.FC = () => {
       await api.post('/api/courses/create', newCourse);
       setSuccess('Course created successfully');
       setShowModal(false);
-      setNewCourse({ name: '', code: '' });
+      setNewCourse({ name: '', code: '', enrollmentKey: '' });
       fetchMyCourses();
     } catch (err) {
       console.error(err);
@@ -122,6 +122,15 @@ const TeacherDashboard: React.FC = () => {
                 placeholder="e.g. Introduction to Programming"
                 value={newCourse.name} 
                 onChange={(e) => setNewCourse({...newCourse, name: e.target.value})}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Enrollment Key (Optional)</Form.Label>
+              <Form.Control 
+                type="text" 
+                placeholder="Leave empty if none"
+                value={newCourse.enrollmentKey} 
+                onChange={(e) => setNewCourse({...newCourse, enrollmentKey: e.target.value})}
               />
             </Form.Group>
           </Form>

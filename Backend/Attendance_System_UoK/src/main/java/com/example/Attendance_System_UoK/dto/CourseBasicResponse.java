@@ -11,4 +11,5 @@ public class CourseBasicResponse {
     private String name;
     private String code;
     private String teacherName;
+    private boolean hasEnrollmentKey;
 }

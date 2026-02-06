@@ -3,8 +3,6 @@ package com.example.Attendance_System_UoK.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-
-
 @Data
 public class CreateCourseDTO {
     @NotBlank
@@ -12,4 +10,6 @@ public class CreateCourseDTO {
 
     @NotBlank
     private String code;
+
+    private String enrollmentKey;
 }

@@ -54,11 +54,14 @@ public class CourseController {
     // Enroll student (can be done by student or admin or teacher)
     @PostMapping("/{courseId}/enroll")
     @PreAuthorize("hasAnyRole('STUDENT')")
-    public Course enrollStudent(@PathVariable String courseId, Authentication authentication) {
+    public Course enrollStudent(
+            @PathVariable String courseId,
+            @RequestParam(required = false) String key,
+            Authentication authentication) {
         String username = authentication.getName();
         Optional<Student> student = studentRepository.findByUsername(username);
         String id = student.get().getId();
-        return courseService.enrollStudent(courseId, id);
+        return courseService.enrollStudent(courseId, id, key);
     }
 
     @DeleteMapping("/{courseId}/unenroll/{studentId}")
@@ -80,17 +83,21 @@ public class CourseController {
             if (!course.getTeacherId().equals(teacher.getId())) {
                 throw new RuntimeException("You are not the teacher of this course");
             }
+            // For teacher, we MUST use the path variable studentId to know WHO to remove
+            courseService.unenrollStudent(courseId, studentId);
+
         } else {
             // Student can only remove THEMSELVES
+            // We IGNORE the path variable studentId and strictly use the ID from the token
             Student student = studentRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("Student not found"));
 
-            if (!student.getId().equals(studentId)) {
-                throw new RuntimeException("You cannot unenroll another student");
-            }
-        }
+            // Log for debugging
+            System.out.println("DEBUG UNENROLL: Authenticated Student: " + username);
+            System.out.println("DEBUG UNENROLL: Using correct ID from DB: " + student.getId());
 
-        courseService.unenrollStudent(courseId, studentId);
+            courseService.unenrollStudent(courseId, student.getId());
+        }
     }
 
     @GetMapping("/teacher")

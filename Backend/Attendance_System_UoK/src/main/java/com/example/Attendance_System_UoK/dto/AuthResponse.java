@@ -15,14 +15,15 @@ public class AuthResponse {
     private Role role;
     private String fullName;
 
-
     // Optional: include role-specific ID
     private String studentId;
     private String teacherId;
     private String adminId;
 
+    // Database ID
+    private String id;
 
-    public AuthResponse(String token, String email,String fullName, Role role, String studentId) {
+    public AuthResponse(String token, String email, String fullName, Role role, String studentId) {
         this.token = token;
         this.email = email;
         this.fullName = fullName;

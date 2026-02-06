@@ -8,6 +8,7 @@ interface User {
   studentId?: string;
   teacherId?: string;
   adminId?: string;
+  id?: string;
 }
 
 interface AuthContextType {

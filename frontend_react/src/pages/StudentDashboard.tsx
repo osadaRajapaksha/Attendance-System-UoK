@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Tabs, Tab, Button, Alert, Spinner, Badge, Card, Row, Col } from 'react-bootstrap';
+import { Container, Tabs, Tab, Button, Alert, Spinner, Badge, Card, Row, Col, Modal, Form } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -9,6 +9,7 @@ interface Course {
   code: string;
   teacherId: string;
   teacherName: string;
+  hasEnrollmentKey: boolean;
 }
 
 const StudentDashboard: React.FC = () => {
@@ -46,15 +47,32 @@ const StudentDashboard: React.FC = () => {
     init();
   }, []);
 
-  const handleEnroll = async (courseId: string) => {
+  /* New State for Enrollment Modal */
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [enrollmentKey, setEnrollmentKey] = useState('');
+
+  const handleEnrollClick = (course: Course) => {
+      if (course.hasEnrollmentKey) {
+          setSelectedCourse(course);
+          setEnrollmentKey('');
+          setShowEnrollModal(true);
+      } else {
+          submitEnrollment(course.id, null);
+      }
+  };
+
+  const submitEnrollment = async (courseId: string, key: string | null) => {
     try {
       setError('');
       setSuccess('');
-      await api.post(`/api/courses/${courseId}/enroll`);
+      
+      await api.post(`/api/courses/${courseId}/enroll${key ? `?key=${key}` : ''}`);
       setSuccess('Enrolled successfully!');
+      setShowEnrollModal(false);
       fetchEnrolledCourses();
-    } catch (err) {
-      setError('Enrollment failed');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Enrollment failed');
       console.error(err);
     }
   };
@@ -81,7 +99,7 @@ const StudentDashboard: React.FC = () => {
             </Card.Text>
             <div className="mt-3">
               {!enrolled ? (
-                <Button variant="primary" className="w-100" onClick={() => handleEnroll(course.id)}>
+                <Button variant="primary" className="w-100" onClick={() => handleEnrollClick(course)}>
                   Enroll Now
                 </Button>
               ) : (
@@ -129,6 +147,29 @@ const StudentDashboard: React.FC = () => {
           </Tab>
         </Tabs>
       )}
+
+      {/* Enrollment Key Modal */}
+      <Modal show={showEnrollModal} onHide={() => setShowEnrollModal(false)} centered>
+        <Modal.Header closeButton>
+            <Modal.Title>Enter Enrollment Key</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+            <p>The course <strong>{selectedCourse?.name}</strong> requires an enrollment key.</p>
+            <Form.Group>
+                <Form.Label>Enrollment Key</Form.Label>
+                <Form.Control 
+                    type="password" 
+                    placeholder="Enter key" 
+                    value={enrollmentKey} 
+                    onChange={(e) => setEnrollmentKey(e.target.value)}
+                />
+            </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowEnrollModal(false)}>Cancel</Button>
+            <Button variant="primary" onClick={() => selectedCourse && submitEnrollment(selectedCourse.id, enrollmentKey)}>Enroll</Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

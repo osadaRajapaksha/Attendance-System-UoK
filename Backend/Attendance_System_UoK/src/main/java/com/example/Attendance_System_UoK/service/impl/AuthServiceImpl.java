@@ -79,9 +79,12 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse(
                 token,
                 student.getEmail(),
-                student.getFullName(),
-                student.getRole(),
-                student.getStudentId());
+                student.getRole(), // Role
+                student.getFullName(), // String
+                student.getStudentId(),
+                null,
+                null,
+                student.getId());
     }
 
     @Override
@@ -116,6 +119,7 @@ public class AuthServiceImpl implements AuthService {
                 user.getFullName(),
                 user instanceof Student ? ((Student) user).getStudentId() : null,
                 user instanceof Teacher ? ((Teacher) user).getTeacherId() : null,
-                user instanceof Admin ? ((Admin) user).getAdminId() : null);
+                user instanceof Admin ? ((Admin) user).getAdminId() : null,
+                user.getId());
     }
 }
