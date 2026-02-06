@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Container, Tabs, Tab, Button, Alert, Spinner, Badge, Card, Row, Col, Modal, Form } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { AuthContext } from '../context/AuthContext';
 
 interface Course {
   id: string;
@@ -13,6 +14,8 @@ interface Course {
 }
 
 const StudentDashboard: React.FC = () => {
+  const user = useContext(AuthContext)?.user;
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,6 +54,41 @@ const StudentDashboard: React.FC = () => {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [enrollmentKey, setEnrollmentKey] = useState('');
+
+  // Account State
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passMsg, setPassMsg] = useState('');
+  const [passError, setPassError] = useState('');
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassMsg('');
+    setPassError('');
+
+    if (newPassword !== confirmPassword) {
+      setPassError("New passwords do not match");
+      return;
+    }
+
+    try {
+      await api.post('/api/users/change-password', {
+        oldPassword,
+        newPassword,
+        confirmNewPassword: confirmPassword
+      });
+      setPassMsg("Password changed successfully");
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setShowPasswordModal(false), 2000);
+    } catch (err: any) {
+       console.error(err);
+       setPassError(err.response?.data?.message || "Failed to change password");
+    }
+  };
 
   const handleEnrollClick = (course: Course) => {
       if (course.hasEnrollmentKey) {
@@ -145,8 +183,96 @@ const StudentDashboard: React.FC = () => {
               )}
             </Row>
           </Tab>
+          <Tab eventKey="account" title="Account">
+            <Row className="justify-content-center mt-4">
+              <Col md={8}>
+                 <Card className="mb-4">
+                  <Card.Header as="h5">My Profile</Card.Header>
+                  <Card.Body>
+                    <Row className="mb-2">
+                       <Col sm={4} className="fw-bold">Full Name:</Col>
+                       <Col sm={8}>{user?.fullName}</Col>
+                    </Row>
+                    <Row className="mb-2">
+                       <Col sm={4} className="fw-bold">Email:</Col>
+                       <Col sm={8}>{user?.email}</Col>
+                    </Row>
+                    <Row className="mb-2">
+                       <Col sm={4} className="fw-bold">Student ID:</Col>
+                       <Col sm={8}>{user?.studentId || 'N/A'}</Col>
+                    </Row>
+                     <Row className="mb-2">
+                       <Col sm={4} className="fw-bold">Degree Program:</Col>
+                       <Col sm={8}>{user?.degreeProgram|| 'N/A'}</Col>
+                    </Row>
+                    <Row className="mb-2">
+                       <Col sm={4} className="fw-bold">Faculty:</Col>
+                       <Col sm={8}>{user?.faculty || 'N/A'}</Col>
+                    </Row>
+                    
+                    <div className="mt-4">
+                        <Button variant="outline-primary" onClick={() => {
+                            setPassMsg('');
+                            setPassError('');
+                            setOldPassword('');
+                            setNewPassword('');
+                            setConfirmPassword('');
+                            setShowPasswordModal(true);
+                        }}>
+                             <i className="bi bi-key-fill me-2"></i>Change Password
+                        </Button>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          </Tab>
         </Tabs>
       )}
+
+      {/* Change Password Modal */}
+      <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)} centered>
+        <Modal.Header closeButton>
+            <Modal.Title>Change Password</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+            {passError && <Alert variant="danger">{passError}</Alert>}
+            {passMsg && <Alert variant="success">{passMsg}</Alert>}
+            <Form onSubmit={handleChangePassword}>
+                <Form.Group className="mb-3">
+                <Form.Label>Old Password</Form.Label>
+                <Form.Control 
+                    type="password" 
+                    required 
+                    value={oldPassword}
+                    onChange={e => setOldPassword(e.target.value)}
+                />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                <Form.Label>New Password</Form.Label>
+                <Form.Control 
+                    type="password" 
+                    required 
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                <Form.Label>Confirm New Password</Form.Label>
+                <Form.Control 
+                    type="password" 
+                    required 
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                />
+                </Form.Group>
+                <div className="d-flex justify-content-end">
+                    <Button variant="secondary" className="me-2" onClick={() => setShowPasswordModal(false)}>Cancel</Button>
+                    <Button variant="warning" type="submit">Update Password</Button>
+                </div>
+            </Form>
+        </Modal.Body>
+      </Modal>
 
       {/* Enrollment Key Modal */}
       <Modal show={showEnrollModal} onHide={() => setShowEnrollModal(false)} centered>

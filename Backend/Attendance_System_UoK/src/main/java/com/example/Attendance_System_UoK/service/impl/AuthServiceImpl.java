@@ -84,7 +84,9 @@ public class AuthServiceImpl implements AuthService {
                 student.getStudentId(),
                 null,
                 null,
-                student.getId());
+                student.getId(),
+                student.getDegreeProgram(),
+                student.getFaculty());
     }
 
     @Override
@@ -120,6 +122,8 @@ public class AuthServiceImpl implements AuthService {
                 user instanceof Student ? ((Student) user).getStudentId() : null,
                 user instanceof Teacher ? ((Teacher) user).getTeacherId() : null,
                 user instanceof Admin ? ((Admin) user).getAdminId() : null,
-                user.getId());
+                user.getId(),
+                user instanceof Student ? ((Student) user).getDegreeProgram() : null,
+                user.getFaculty());
     }
 }

@@ -27,6 +27,14 @@ public class StudentServiceImpl implements StudentService {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getRole());
+                user.getRole(),
+                user.getFullName(),
+                user instanceof com.example.Attendance_System_UoK.model.Student
+                        ? ((com.example.Attendance_System_UoK.model.Student) user).getStudentId()
+                        : null,
+                user instanceof com.example.Attendance_System_UoK.model.Student
+                        ? ((com.example.Attendance_System_UoK.model.Student) user).getDegreeProgram()
+                        : null,
+                user.getFaculty());
     }
 }

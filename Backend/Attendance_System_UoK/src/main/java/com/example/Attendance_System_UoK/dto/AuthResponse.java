@@ -23,11 +23,18 @@ public class AuthResponse {
     // Database ID
     private String id;
 
-    public AuthResponse(String token, String email, String fullName, Role role, String studentId) {
+    // Additional Details
+    private String degreeProgram;
+    private String faculty;
+
+    public AuthResponse(String token, String email, String fullName, Role role, String studentId, String degreeProgram,
+            String faculty) {
         this.token = token;
         this.email = email;
         this.fullName = fullName;
         this.role = role;
         this.studentId = studentId;
+        this.degreeProgram = degreeProgram;
+        this.faculty = faculty;
     }
 }

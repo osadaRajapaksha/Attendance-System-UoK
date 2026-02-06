@@ -23,4 +23,12 @@ public class UserController {
         String username = authentication.getName();
         return ResponseEntity.ok(userService.getUserByUsername(username));
     }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(Authentication authentication,
+            @RequestBody com.example.Attendance_System_UoK.dto.ChangePasswordDTO dto) {
+        String username = authentication.getName();
+        userService.changePassword(username, dto);
+        return ResponseEntity.ok("Password changed successfully");
+    }
 }

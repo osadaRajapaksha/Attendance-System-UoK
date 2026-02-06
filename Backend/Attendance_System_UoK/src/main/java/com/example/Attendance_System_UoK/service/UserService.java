@@ -16,12 +16,15 @@ public class UserService {
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
     private final AdminRepository adminRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public UserService(StudentRepository studentRepository, TeacherRepository teacherRepository,
-            AdminRepository adminRepository) {
+            AdminRepository adminRepository,
+            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.studentRepository = studentRepository;
         this.teacherRepository = teacherRepository;
         this.adminRepository = adminRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public UserResponse getUserByUsername(String username) {
@@ -35,11 +38,42 @@ public class UserService {
         return mapToUserResponse(user);
     }
 
+    public void changePassword(String username, com.example.Attendance_System_UoK.dto.ChangePasswordDTO dto) {
+        User user = studentRepository.findByUsername(username)
+                .map(u -> (User) u)
+                .orElseGet(() -> teacherRepository.findByUsername(username)
+                        .map(u -> (User) u)
+                        .orElseGet(() -> adminRepository.findByUsername(username)
+                                .orElseThrow(() -> new RuntimeException("User not found"))));
+
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid old password");
+        }
+
+        if (dto.getConfirmNewPassword() == null || !dto.getNewPassword().equals(dto.getConfirmNewPassword())) {
+            throw new RuntimeException("Passwords do not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+
+        if (user instanceof Student) {
+            studentRepository.save((Student) user);
+        } else if (user instanceof Teacher) {
+            teacherRepository.save((Teacher) user);
+        } else if (user instanceof Admin) {
+            adminRepository.save((Admin) user);
+        }
+    }
+
     private UserResponse mapToUserResponse(User user) {
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getRole());
+                user.getRole(),
+                user.getFullName(),
+                user instanceof Student ? ((Student) user).getStudentId() : null,
+                user instanceof Student ? ((Student) user).getDegreeProgram() : null,
+                user.getFaculty());
     }
 }

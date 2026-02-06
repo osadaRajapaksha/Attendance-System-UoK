@@ -30,16 +30,17 @@ public class TeacherServiceImpl implements TeacherService {
         teacher.setCreatedAt(LocalDateTime.now());
         teacher.setUpdatedAt(LocalDateTime.now());
 
-         Teacher savedTeacher = teacherRepository.save(teacher);
+        Teacher savedTeacher = teacherRepository.save(teacher);
 
-         return new UserResponse(
-                 savedTeacher.getId(),
-                 savedTeacher.getUsername(),
-                 savedTeacher.getEmail(),
-                 savedTeacher.getRole()
-
-         );
-
+        return new UserResponse(
+                savedTeacher.getId(),
+                savedTeacher.getUsername(),
+                savedTeacher.getEmail(),
+                savedTeacher.getRole(),
+                savedTeacher.getFullName(),
+                null, // studentId
+                null, // degreeProgram
+                savedTeacher.getFaculty());
 
     }
 }

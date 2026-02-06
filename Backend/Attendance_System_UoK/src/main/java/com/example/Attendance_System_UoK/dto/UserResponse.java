@@ -20,10 +20,15 @@ public class UserResponse {
     private String faculty;
     private String degreeProgram;
 
-    public UserResponse(String id, String username, String email, Role role) {
+    public UserResponse(String id, String username, String email, Role role, String fullName, String studentId,
+            String degreeProgram, String faculty) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.role = role;
+        this.fullName = fullName;
+        this.studentId = studentId;
+        this.degreeProgram = degreeProgram;
+        this.faculty = faculty;
     }
 }

@@ -9,6 +9,8 @@ interface User {
   teacherId?: string;
   adminId?: string;
   id?: string;
+  degreeProgram?: string;
+  faculty?: string;
 }
 
 interface AuthContextType {

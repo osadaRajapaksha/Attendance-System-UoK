@@ -57,7 +57,7 @@ const Countdown = ({ targetDate, onComplete }: { targetDate: string, onComplete?
 const StudentCourseDetails: React.FC = () => {
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
+    const user = useContext(AuthContext)?.user;
     
     const [course, setCourse] = useState<Course | null>(null);
     const [sessions, setSessions] = useState<Session[]>([]);
@@ -67,6 +67,7 @@ const StudentCourseDetails: React.FC = () => {
     const [error, setError] = useState('');
     const [msg, setMsg] = useState('');
     const [showUnenrollModal, setShowUnenrollModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const fetchData = async () => {
         setLoading(prev => sessions.length === 0);
@@ -96,8 +97,7 @@ const StudentCourseDetails: React.FC = () => {
         try {
             await api.delete(`/api/courses/${courseId}/unenroll/${user?.id}`);
             setShowUnenrollModal(false);
-            alert("Unenrolled successfully");
-            navigate('/student-dashboard');
+            setShowSuccessModal(true);
         } catch (err: any) {
             console.error(err);
             setError("Failed to unenroll.");
@@ -271,6 +271,27 @@ const StudentCourseDetails: React.FC = () => {
                     </Button>
                     <Button variant="danger" onClick={handleUnenroll}>
                         Yes, Unenroll
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Success Modal */}
+            <Modal show={showSuccessModal} onHide={() => {}} centered backdrop="static" keyboard={false}>
+                <Modal.Header>
+                    <Modal.Title>Success</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="text-center text-success mb-3">
+                        <i className="bi bi-check-circle-fill" style={{ fontSize: '3rem' }}></i>
+                    </div>
+                    <p className="text-center">You have successfully unenrolled from <strong>{course.name}</strong>.</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="primary" onClick={() => {
+                        setShowSuccessModal(false);
+                        navigate('/student-dashboard');
+                    }}>
+                        OK
                     </Button>
                 </Modal.Footer>
             </Modal>

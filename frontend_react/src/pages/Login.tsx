@@ -27,7 +27,7 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       const response = await api.post('/api/auth/login', { email, password });
-      const { token, role, fullName, studentId, teacherId, adminId } = response.data;
+      const { token, role, fullName, studentId, teacherId, adminId, degreeProgram, faculty } = response.data;
       
       auth?.login({
         token,
@@ -36,7 +36,9 @@ const Login: React.FC = () => {
         fullName,
         studentId,
         teacherId,
-        adminId
+        adminId,
+        degreeProgram,
+        faculty
       });
 
       if (role === 'ROLE_STUDENT') navigate('/student-dashboard');
