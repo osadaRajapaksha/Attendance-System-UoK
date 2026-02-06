@@ -29,15 +29,18 @@ public class SessionService {
     private final CourseRepository courseRepository;
     private final StudentRepository studentRepository;
     private final SystemSettingService systemSettingService;
+    private final com.example.Attendance_System_UoK.util.DeviceTokenUtil deviceTokenUtil;
 
     public SessionService(SessionRepository sessionRepository, AttendanceRepository attendanceRepository,
             CourseRepository courseRepository, StudentRepository studentRepository,
-            SystemSettingService systemSettingService) {
+            SystemSettingService systemSettingService,
+            com.example.Attendance_System_UoK.util.DeviceTokenUtil deviceTokenUtil) {
         this.sessionRepository = sessionRepository;
         this.attendanceRepository = attendanceRepository;
         this.courseRepository = courseRepository;
         this.studentRepository = studentRepository;
         this.systemSettingService = systemSettingService;
+        this.deviceTokenUtil = deviceTokenUtil;
     }
 
     @Transactional
@@ -52,7 +55,15 @@ public class SessionService {
         session.setStartTime(request.getStartTime());
         session.setEndTime(request.getEndTime());
         session.setBoundary(request.getBoundary());
-        session.setStatus(SessionStatus.SCHEDULED);
+
+        long durationMinutes = java.time.Duration.between(request.getStartTime(), request.getEndTime()).toMinutes();
+        if (request.getCheckInIntervalMinutes() >= durationMinutes) {
+            throw new IllegalArgumentException("Check-in interval must be less than session duration.");
+        }
+
+        session.setRequiredCheckIns(request.getRequiredCheckIns() > 0 ? request.getRequiredCheckIns() : 1);
+        session.setCheckInIntervalMinutes(request.getCheckInIntervalMinutes());
+        updateSessionStatus(session);
 
         createdSessions.add(sessionRepository.save(session));
 
@@ -72,12 +83,14 @@ public class SessionService {
                 nextSession.setStartTime(nextStart);
                 nextSession.setEndTime(nextEnd);
                 nextSession.setBoundary(request.getBoundary());
-                nextSession.setStatus(SessionStatus.SCHEDULED);
+                nextSession.setRequiredCheckIns(session.getRequiredCheckIns());
+                nextSession.setCheckInIntervalMinutes(session.getCheckInIntervalMinutes());
+                updateSessionStatus(nextSession);
                 createdSessions.add(sessionRepository.save(nextSession));
 
+                weekCount++;
                 nextStart = nextStart.plusWeeks(1);
                 nextEnd = nextEnd.plusWeeks(1);
-                weekCount++;
             }
         }
 
@@ -112,7 +125,7 @@ public class SessionService {
         return allSessions;
     }
 
-    public Attendance markAttendance(String studentId, MarkAttendanceRequest request) {
+    public Attendance markAttendance(String loggedInStudentId, MarkAttendanceRequest request) {
         Session session = sessionRepository.findById(request.getSessionId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
 
@@ -123,25 +136,77 @@ public class SessionService {
                     "Session is not active. Status: " + session.getStatus());
         }
 
-        // 2. Check if student already marked
-        if (attendanceRepository.findBySessionIdAndStudentId(session.getId(), studentId).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Attendance already marked.");
+        // Anti-Fraud: Device Lock Check
+        String deviceOwnerId = null;
+        if (request.getDeviceToken() != null && !request.getDeviceToken().isEmpty()) {
+            deviceOwnerId = deviceTokenUtil.decrypt(request.getDeviceToken());
         }
 
-        // 3. Check Location (Ray Casting)
+        // We ALWAYS mark for the logged-in user (as per user requirement "student B can
+        // got attendance")
+        String studentId = loggedInStudentId;
+
+        // 2. Retrieve existing attendance or create new
+        Attendance attendance = attendanceRepository.findBySessionIdAndStudentId(session.getId(), studentId)
+                .orElse(null);
+
+        // 3. Check Location
         if (!isPointInPolygon(new GeoPoint(request.getLat(), request.getLng()), session.getBoundary())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "You are not within the session boundary. Please move closer to the class.");
         }
 
-        Attendance attendance = new Attendance();
-        attendance.setSessionId(session.getId());
-        attendance.setStudentId(studentId);
-        attendance.setMarkedAt(LocalDateTime.now(systemSettingService.getSystemTimezone()));
-        attendance.setStatus("PRESENT");
+        LocalDateTime now = LocalDateTime.now(systemSettingService.getSystemTimezone());
+
+        if (attendance == null) {
+            // First Check-in
+            attendance = new Attendance();
+            attendance.setSessionId(session.getId());
+            attendance.setStudentId(studentId);
+            attendance.setDeviceStudentId(deviceOwnerId); // Log the device owner
+            attendance.setCheckInTimes(new java.util.ArrayList<>(java.util.Collections.singletonList(now)));
+            attendance.setMarkedAt(now);
+            // Only set PRESENT if required is 1 (or 0)
+            if (session.getRequiredCheckIns() <= 1) {
+                attendance.setStatus("PRESENT");
+            } else {
+                attendance.setStatus("IN_PROGRESS");
+            }
+        } else {
+            // Subsequent Check-in
+            if (attendance.getCheckInTimes() == null) {
+                attendance.setCheckInTimes(new java.util.ArrayList<>());
+            }
+
+            // Check if already completed
+            if (attendance.getCheckInTimes().size() >= session.getRequiredCheckIns()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "You have already completed all required check-ins.");
+            }
+
+            // Check Interval
+            if (!attendance.getCheckInTimes().isEmpty()) {
+                LocalDateTime lastCheckIn = attendance.getCheckInTimes().get(attendance.getCheckInTimes().size() - 1);
+                long minutesExceeded = java.time.Duration.between(lastCheckIn, now).toMinutes();
+                if (minutesExceeded < session.getCheckInIntervalMinutes()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Please wait " + (session.getCheckInIntervalMinutes() - minutesExceeded)
+                                    + " more minutes before next check-in.");
+                }
+            }
+
+            attendance.getCheckInTimes().add(now);
+            attendance.setMarkedAt(now); // Update last marked time
+
+            if (attendance.getCheckInTimes().size() >= session.getRequiredCheckIns()) {
+                attendance.setStatus("PRESENT");
+            }
+        }
 
         return attendanceRepository.save(attendance);
     }
+
+    // Duplicate block removed
 
     public Session updateSession(String sessionId, SessionUpdateRequest request) {
         Session session = sessionRepository.findById(sessionId)

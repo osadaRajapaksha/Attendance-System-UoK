@@ -24,34 +24,36 @@ interface Course {
 }
 
 const Countdown = ({ targetDate, onComplete }: { targetDate: string, onComplete?: () => void }) => {
-    const [timeLeft, setTimeLeft] = useState("");
+    const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
     useEffect(() => {
-        const interval = setInterval(() => {
+        const tick = () => {
             const now = new Date().getTime();
             const target = new Date(targetDate).getTime();
             const diff = target - now;
+            const FIVE_MINUTES = 5 * 60 * 1000;
 
-            if (diff <= 0) {
+            if (diff > FIVE_MINUTES) {
+                setTimeLeft(null); // Hide if more than 5 mins away
+            } else if (diff <= 0) {
                 setTimeLeft("Starting soon...");
-                clearInterval(interval);
-                if (onComplete) onComplete();
+                // Allow a small buffer to trigger refresh once
+                if (onComplete && diff > -2000) onComplete();
             } else {
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                
-                let s = "";
-                if (days > 0) s += `${days}d `;
-                s += `${hours}h ${minutes}m ${seconds}s`;
-                setTimeLeft(s);
+                setTimeLeft(`${minutes}m ${seconds}s`);
             }
-        }, 1000);
+        };
+
+        tick();
+        const interval = setInterval(tick, 1000);
         return () => clearInterval(interval);
     }, [targetDate, onComplete]);
 
-    return <div className="text-primary fw-bold">Starts in: {timeLeft}</div>;
+    if (!timeLeft) return null;
+
+    return <div className="text-danger fw-bold">Starts in: {timeLeft}</div>;
 };
 
 const StudentCourseDetails: React.FC = () => {
@@ -73,6 +75,17 @@ const StudentCourseDetails: React.FC = () => {
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [selectedHistorySession, setSelectedHistorySession] = useState<Session | null>(null);
 
+    // Attendance Status Map: sessionId -> { count, required, completed, nextCheckIn, logs }
+    interface AttendanceStatus {
+        checkInCount: number;
+        requiredCheckIns: number;
+        lastCheckIn: string | null;
+        completed: boolean;
+        nextAllowedCheckIn: string | null;
+        checkInLogs: string[];
+    }
+    const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStatus>>({});
+
     const fetchData = async () => {
         setLoading(prev => sessions.length === 0);
         try {
@@ -83,8 +96,31 @@ const StudentCourseDetails: React.FC = () => {
             const sessionRes = await api.get(`/api/sessions/course/${courseId}`);
             setSessions(sessionRes.data);
 
-            const markedRes = await api.get('/api/attendance/student/marked');
-            setMarkedSessionIds(markedRes.data);
+            // Fetch Status
+            try {
+                const statusRes = await api.get('/api/attendance/student/status');
+                const statusMap: Record<string, AttendanceStatus> = {};
+                const markedIds: string[] = [];
+
+                statusRes.data.forEach((s: any) => {
+                    statusMap[s.sessionId] = {
+                        checkInCount: s.checkInCount,
+                        requiredCheckIns: s.requiredCheckIns,
+                        lastCheckIn: s.lastCheckIn,
+                        completed: s.completed,
+                        nextAllowedCheckIn: s.nextAllowedCheckIn,
+                        checkInLogs: s.checkInLogs || []
+                    };
+                    if (s.completed) markedIds.push(s.sessionId);
+                });
+                
+                setAttendanceMap(statusMap);
+                setMarkedSessionIds(markedIds);
+            } catch (ignored) {
+                // Fallback if endpoint fails
+                const markedRes = await api.get('/api/attendance/student/marked');
+                setMarkedSessionIds(markedRes.data);
+            }
         } catch (err) {
             console.error(err);
             setError("Failed to load course data.");
@@ -129,10 +165,13 @@ const StudentCourseDetails: React.FC = () => {
             async (position) => {
                 try {
                     const { latitude, longitude } = position.coords;
+                    const deviceToken = localStorage.getItem('device_token');
+                    
                     await api.post('/api/sessions/mark', {
                         sessionId,
                         lat: latitude,
-                        lng: longitude
+                        lng: longitude,
+                        deviceToken: deviceToken || ""
                     });
                     setMsg("Attendance Marked Successfully!");
                     fetchData(); // Refresh marked status
@@ -152,6 +191,13 @@ const StudentCourseDetails: React.FC = () => {
     };
 
     const categorizeSessions = (status: string) => sessions.filter(s => s.status === status);
+
+    const getButtonLabel = (session: Session) => {
+        if (markingSessionId === session.id) return 'Marking...';
+        const stat = attendanceMap[session.id];
+        if (!stat) return 'Mark Attendance';
+        return `Mark Check-in (${stat.checkInCount + 1}/${stat.requiredCheckIns})`;
+    };
 
     if (loading) return <Container className="mt-5 text-center"><Spinner animation="border" /></Container>;
     if (!course) return <Container className="mt-5"><Alert variant="danger">Course not found</Alert></Container>;
@@ -277,30 +323,64 @@ const StudentCourseDetails: React.FC = () => {
                                         <Card.Text>
                                             <strong>Time:</strong> {new Date(session.startTime).toLocaleString()} - {new Date(session.endTime).toLocaleTimeString()}
                                         </Card.Text>
-                                        {markedSessionIds.includes(session.id) ? (
-                                            <Button variant="secondary" disabled>
-                                                Marked
+                                        {/* Show Status if partially marked */}
+                                        {attendanceMap[session.id] && (
+                                            <div className="mb-2">
+                                                {!attendanceMap[session.id].completed && (
+                                                    <div className="text-warning small mb-1">
+                                                        <i className="bi bi-hourglass-split me-1"></i>
+                                                        Check-in {attendanceMap[session.id].checkInCount} of {attendanceMap[session.id].requiredCheckIns} completed
+                                                    </div>
+                                                )}
+                                                {/* Countdown to next check-in */}
+                                                {attendanceMap[session.id].nextAllowedCheckIn && !attendanceMap[session.id].completed && (
+                                                     <div className="mb-2">
+                                                         <small className="text-muted d-block">Next check-in available in:</small>
+                                                         <Countdown 
+                                                            targetDate={attendanceMap[session.id].nextAllowedCheckIn!} 
+                                                            onComplete={fetchData} 
+                                                         />
+                                                     </div>
+                                                )}
+                                                {/* Logs */}
+                                                {attendanceMap[session.id].checkInLogs.length > 0 && (
+                                                    <div className="mt-2 border-top pt-2">
+                                                        <small className="text-muted fw-bold">Check-in Log:</small>
+                                                        <ul className="list-unstyled small mb-0 ms-1 text-muted">
+                                                            {attendanceMap[session.id].checkInLogs.map((log, idx) => (
+                                                                <li key={idx}>
+                                                                    <i className="bi bi-check-circle-fill text-success me-1"></i>
+                                                                    {new Date(log).toLocaleTimeString()}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        
+                                        {attendanceMap[session.id]?.completed || markedSessionIds.includes(session.id) ? (
+                                            <Button variant="secondary" disabled className="w-100">
+                                                Marked <i className="bi bi-check-all ms-1"></i>
                                             </Button>
                                         ) : (
                                             <Button 
-                                                variant="success" 
+                                                variant={attendanceMap[session.id]?.checkInCount > 0 ? "warning" : "success"}
                                                 onClick={() => markAttendance(session.id)}
-                                                disabled={markingSessionId === session.id}
+                                                disabled={
+                                                    markingSessionId === session.id || 
+                                                    !!(attendanceMap[session.id]?.nextAllowedCheckIn && new Date() < new Date(attendanceMap[session.id].nextAllowedCheckIn!))
+                                                }
+                                                className="w-100"
                                             >
                                                 {markingSessionId === session.id ? (
                                                     <>
-                                                        <Spinner
-                                                            as="span"
-                                                            animation="border"
-                                                            size="sm"
-                                                            role="status"
-                                                            aria-hidden="true"
-                                                            className="me-2"
-                                                        />
-                                                        Marking...
+                                                        <Spinner size="sm" className="me-2" /> Marking...
                                                     </>
                                                 ) : (
-                                                    'Mark Attendance'
+                                                     attendanceMap[session.id]?.nextAllowedCheckIn && new Date() < new Date(attendanceMap[session.id].nextAllowedCheckIn!) 
+                                                     ? "Wait for next slot..." 
+                                                     : getButtonLabel(session)
                                                 )}
                                             </Button>
                                         )}

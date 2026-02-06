@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { Container, Form, Button, Alert, Spinner, Row, Col } from 'react-bootstrap';
 import { GoogleMap, useJsApiLoader, DrawingManager } from '@react-google-maps/api';
 import api from '../api/axios';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -22,6 +22,11 @@ const TeacherSessionCreate: React.FC = () => {
     const [weekly, setWeekly] = useState(false);
     const [recurrenceStartDate, setRecurrenceStartDate] = useState('');
     const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+    
+    // Check-in Config
+    const [requiredCheckIns, setRequiredCheckIns] = useState('1');
+    const [checkInIntervalMinutes, setCheckInIntervalMinutes] = useState('0');
+
     const [scheduledDates, setScheduledDates] = useState<string[]>([]);
     const [boundary, setBoundary] = useState<{lat: number, lng: number}[]>([]);
 
@@ -130,6 +135,15 @@ const TeacherSessionCreate: React.FC = () => {
             return;
         }
 
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+
+        if (parseInt(checkInIntervalMinutes) >= durationMinutes) {
+            setError(`Check-in interval must be less than the session duration (${durationMinutes} minutes).`);
+            return;
+        }
+
         setLoading(true);
         try {
             await api.post('/api/sessions/create', {
@@ -139,6 +153,8 @@ const TeacherSessionCreate: React.FC = () => {
                 endTime,
                 weekly,
                 recurrenceEndDate: weekly && recurrenceEndDate ? new Date(recurrenceEndDate).toISOString() : null,
+                requiredCheckIns: parseInt(requiredCheckIns),
+                checkInIntervalMinutes: parseInt(checkInIntervalMinutes),
                 boundary
             });
             setSuccess("Session created successfully!");
@@ -221,6 +237,37 @@ const TeacherSessionCreate: React.FC = () => {
                   </div>
               )}
               
+              <Row>
+                  <Col md={6}>
+                      <Form.Group className="mb-3">
+                          <Form.Label>Required Check-ins</Form.Label>
+                          <Form.Control 
+                              type="number" 
+                              min="1" 
+                              value={requiredCheckIns} 
+                              onChange={(e) => setRequiredCheckIns(e.target.value)} 
+                          />
+                          <Form.Text className="text-muted">
+                              Number of times a student must mark attendance.
+                          </Form.Text>
+                      </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                      <Form.Group className="mb-3">
+                          <Form.Label>Check-in Interval (Minutes)</Form.Label>
+                          <Form.Control 
+                              type="number" 
+                              min="0" 
+                              value={checkInIntervalMinutes} 
+                              onChange={(e) => setCheckInIntervalMinutes(e.target.value)} 
+                          />
+                          <Form.Text className="text-muted">
+                              Minimum wait time between check-ins.
+                          </Form.Text>
+                      </Form.Group>
+                  </Col>
+              </Row>
+
               <Form.Group className="mb-3">
                   <Form.Label>Draw Session Area (Rectangle)</Form.Label>
                   <GoogleMap

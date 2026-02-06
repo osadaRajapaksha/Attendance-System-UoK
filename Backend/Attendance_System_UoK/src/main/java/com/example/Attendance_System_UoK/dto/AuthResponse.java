@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 public class AuthResponse {
 
     private String token;
+    private String deviceToken; // For anti-fraud
     private String email;
     private Role role;
     private String fullName;
@@ -27,9 +28,11 @@ public class AuthResponse {
     private String degreeProgram;
     private String faculty;
 
-    public AuthResponse(String token, String email, String fullName, Role role, String studentId, String degreeProgram,
+    public AuthResponse(String token, String deviceToken, String email, String fullName, Role role, String studentId,
+            String degreeProgram,
             String faculty) {
         this.token = token;
+        this.deviceToken = deviceToken;
         this.email = email;
         this.fullName = fullName;
         this.role = role;

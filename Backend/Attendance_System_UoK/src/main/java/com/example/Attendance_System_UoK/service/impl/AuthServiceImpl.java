@@ -27,7 +27,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
-    private final OtpService otpService;
+    private final com.example.Attendance_System_UoK.service.OtpService otpService;
+    private final com.example.Attendance_System_UoK.util.DeviceTokenUtil deviceTokenUtil;
 
     // REGISTER ONLY STUDENTS
     @Override
@@ -49,14 +50,6 @@ public class AuthServiceImpl implements AuthService {
                     "Invalid Student ID format. Expected format: XX/year/number (e.g., SE/2021/001, SC/2022/071)");
         }
 
-        // Check if studentId already exists (optional but good practice, though not
-        // explicitly asked, avoiding constraint violation is better)
-        // Assuming studentId is unique? The user didn't say, but IDs usually are. I
-        // won't enforce uniqueness unless I see unique index or user asks, but usually
-        // it should be.
-        // However, model doesn't show unique constraint. I'll stick to format
-        // validation.
-
         Student student = new Student();
         student.setEmail(request.getEmail());
         student.setFullName(request.getFullName());
@@ -75,16 +68,15 @@ public class AuthServiceImpl implements AuthService {
         studentRepository.save(student);
 
         String token = jwtUtil.generateToken(student);
+        String deviceToken = deviceTokenUtil.encrypt(student.getId());
 
         return new AuthResponse(
                 token,
+                deviceToken,
                 student.getEmail(),
-                student.getRole(), // Role
                 student.getFullName(), // String
+                student.getRole(), // Role
                 student.getStudentId(),
-                null,
-                null,
-                student.getId(),
                 student.getDegreeProgram(),
                 student.getFaculty());
     }
@@ -113,16 +105,15 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtUtil.generateToken(user);
+        String deviceToken = deviceTokenUtil.encrypt(user.getId());
 
         return new AuthResponse(
                 token,
+                deviceToken,
                 user.getEmail(),
-                user.getRole(),
                 user.getFullName(),
+                user.getRole(),
                 user instanceof Student ? ((Student) user).getStudentId() : null,
-                user instanceof Teacher ? ((Teacher) user).getTeacherId() : null,
-                user instanceof Admin ? ((Admin) user).getAdminId() : null,
-                user.getId(),
                 user instanceof Student ? ((Student) user).getDegreeProgram() : null,
                 user.getFaculty());
     }

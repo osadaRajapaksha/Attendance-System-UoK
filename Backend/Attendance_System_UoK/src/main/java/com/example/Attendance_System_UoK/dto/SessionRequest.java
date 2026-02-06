@@ -14,4 +14,6 @@ public class SessionRequest {
     private List<GeoPoint> boundary;
     private boolean weekly;
     private LocalDateTime recurrenceEndDate;
+    private int requiredCheckIns;
+    private int checkInIntervalMinutes;
 }

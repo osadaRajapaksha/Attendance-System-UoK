@@ -13,4 +13,5 @@ public class StudentBasicInfo {
     private String fullName;
     private String studentId; // e.g., index number
     private LocalDateTime markedAt; // Optional, for attendance list
+    private String deviceMismatchInfo; // Potential fraud indicator (Index Number)
 }

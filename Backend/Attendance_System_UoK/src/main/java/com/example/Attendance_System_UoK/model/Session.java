@@ -25,5 +25,9 @@ public class Session {
     // List of 4 coordinates: [{lat, lng}, ...]
     private List<GeoPoint> boundary;
 
+    // Check-in configuration
+    private int requiredCheckIns; // Default 1
+    private int checkInIntervalMinutes; // Default 0
+
     private SessionStatus status;
 }

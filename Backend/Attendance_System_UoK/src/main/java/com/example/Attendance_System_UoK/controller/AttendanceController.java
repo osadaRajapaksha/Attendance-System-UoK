@@ -35,7 +35,23 @@ public class AttendanceController {
     public ResponseEntity<List<String>> getMyMarkedSessions(Authentication authentication) {
         String username = authentication.getName();
         UserResponse user = userService.getUserByUsername(username);
-        // We can pass courseId if we want to filter, but returning all is okay for now
         return ResponseEntity.ok(attendanceService.getMarkedSessionIdsForStudent(null, user.getId()));
+    }
+
+    @GetMapping("/student/status")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<com.example.Attendance_System_UoK.dto.AttendanceStatusDTO>> getMyAttendanceStatus(
+            Authentication authentication) {
+        String username = authentication.getName();
+        UserResponse user = userService.getUserByUsername(username);
+        return ResponseEntity.ok(attendanceService.getStudentAttendanceStatus(user.getId()));
+    }
+
+    @PostMapping("/manual-mark")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<String> manualMark(
+            @RequestBody com.example.Attendance_System_UoK.dto.ManualMarkRequest request) {
+        attendanceService.manualMarkAttendance(request.getSessionId(), request.getStudentId(), request.getNote());
+        return ResponseEntity.ok("Attendance manually marked successfully.");
     }
 }

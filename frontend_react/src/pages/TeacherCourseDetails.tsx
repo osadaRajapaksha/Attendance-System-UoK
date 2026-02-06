@@ -49,6 +49,12 @@ const TeacherCourseDetails: React.FC = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
 
+    // Manual Mark State
+    const [showManualMarkModal, setShowManualMarkModal] = useState(false);
+    const [markingStudentId, setMarkingStudentId] = useState<string | null>(null);
+    const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+    const [manualMarkNote, setManualMarkNote] = useState('');
+
     // Map State
     const [map, setMap] = React.useState(null);
     const [mapCenter, setMapCenter] = useState(defaultCenter);
@@ -170,6 +176,7 @@ const TeacherCourseDetails: React.FC = () => {
 
     const handleViewAttendance = async (session: any) => {
         setSelectedSessionTitle(session.title);
+        setSelectedSessionId(session.id);
         setShowModal(true);
         setLoadingAttendance(true);
         setAttendanceList([]);
@@ -181,6 +188,33 @@ const TeacherCourseDetails: React.FC = () => {
              alert("Failed to fetch attendance");
         } finally {
             setLoadingAttendance(false);
+        }
+    };
+
+    const handleManualMarkClick = (studentId: string) => {
+        setMarkingStudentId(studentId);
+        setManualMarkNote('');
+        setShowManualMarkModal(true);
+    };
+
+    const handleSubmitManualMark = async () => {
+        if (!markingStudentId || !selectedSessionId) return;
+        
+        try {
+            await api.post('/api/attendance/manual-mark', {
+                sessionId: selectedSessionId,
+                studentId: markingStudentId,
+                note: manualMarkNote
+            });
+            setShowManualMarkModal(false);
+            
+            // Refresh attendance list
+            const res = await api.get(`/api/attendance/session/${selectedSessionId}`);
+            setAttendanceList(res.data);
+            
+        } catch (err) {
+            console.error(err);
+            alert("Failed to manually mark attendance.");
         }
     };
 
@@ -406,46 +440,99 @@ const TeacherCourseDetails: React.FC = () => {
                 </Modal.Footer>
             </Modal>
 
+            {/* Manual Mark Modal */}
+            <Modal show={showManualMarkModal} onHide={() => { setShowManualMarkModal(false); setManualMarkNote(''); }}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Manual Mark Attendance</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Note (Optional)</Form.Label>
+                            <Form.Control 
+                                as="textarea" 
+                                rows={3} 
+                                value={manualMarkNote} 
+                                onChange={(e) => setManualMarkNote(e.target.value)} 
+                                placeholder="Reason for manual marking..."
+                            />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowManualMarkModal(false)}>Cancel</Button>
+                    <Button variant="primary" onClick={handleSubmitManualMark}>Mark Present</Button>
+                </Modal.Footer>
+            </Modal>
+
             {/* Attendance Modal */}
-            <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+            <Modal show={showModal} onHide={() => setShowModal(false)} size="xl">
                 <Modal.Header closeButton>
                     <Modal.Title>Attendance: {selectedSessionTitle}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {loadingAttendance ? <Spinner animation="border" /> : (
                          enrolledStudents.length === 0 ? <p>No students enrolled in this course.</p> : (
-                             <Table striped hover>
+                             <Table striped hover responsive>
                                  <thead>
                                      <tr>
                                          <th>Student Name</th>
                                          <th>Index No</th>
                                          <th>Status</th>
-                                         <th>Marked At</th>
+                                         <th>Detail Log</th>
+                                         <th>Actions</th>
                                      </tr>
                                  </thead>
                                  <tbody>
                                      {enrolledStudents.map((stu: any) => {
-                                         // Check if this student is in the attendance list
-                                         const attendanceRecord = attendanceList.find((att: any) => att.studentId === stu.id || att.studentId === stu.studentId); // Assuming attendance returns studentId that matches.
-                                         // Let's verify backend return. SessionService.markAttendance returns Attendance which has studentId (DB ID).
-                                         // enrolledStudents (from /api/courses/{id}/students) returns UserResponse (id, studentId (reg no), fullName).
-                                         // So we should match on DB ID 'id'. 
-                                         // Wait, Attendance object in backend: private String studentId; (which is the DB ID).
-                                         // So finding by att.studentId === stu.id should be correct.
+                                         const attendanceRecord = attendanceList.find((att: any) => att.studentId === stu.id || att.studentId === stu.studentId);
                                          
-                                         const isPresent = !!attendanceRecord;
+                                         // Status Logic: 
+                                         // If manually marked: PRESENT (Manual)
+                                         // If normal: check if completed required check-ins? 
+                                         // The backend session service should ideally tell us completion status, but here we have raw Attendance object.
+                                         // We can check logic: attendanceRecord.status === 'PRESENT'
+                                         
+                                         const isPresent = attendanceRecord && attendanceRecord.status === 'PRESENT';
+                                         const isManual = attendanceRecord?.isManuallyMarked;
                                          
                                          return (
-                                             <tr key={stu.id} className={isPresent ? "table-success" : "table-secondary"}>
+                                             <tr key={stu.id} className={isPresent ? "table-success" : ""}>
                                                  <td>{stu.fullName}</td>
                                                  <td>{stu.studentId}</td>
                                                  <td>
-                                                     {isPresent ? <Badge bg="success">Present</Badge> : <Badge bg="danger">Absent</Badge>}
+                                                     {isPresent ? (
+                                                         <Badge bg="success">
+                                                            Present {isManual ? '(Manual)' : ''}
+                                                         </Badge>
+                                                     ) : <Badge bg="danger">Absent</Badge>}
                                                  </td>
                                                  <td>
-                                                     {isPresent && attendanceRecord.markedAt 
-                                                        ? new Date(attendanceRecord.markedAt).toLocaleTimeString() 
-                                                        : "-"}
+                                                     {attendanceRecord ? (
+                                                         <ul className="list-unstyled mb-0 small">
+                                                            {attendanceRecord.checkInTimes?.map((time: string, i: number) => (
+                                                                <li key={i}>{new Date(time).toLocaleTimeString()}</li>
+                                                            ))}
+                                                            {isManual && <li className="text-muted fst-italic">Note: {attendanceRecord.manualMarkNote}</li>}
+                                                            {attendanceRecord.deviceMismatchInfo && (
+                                                                <li className="text-danger fw-bold mt-1">
+                                                                    <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                                                                    Device Owner: {attendanceRecord.deviceMismatchInfo}
+                                                                </li>
+                                                            )}
+                                                        </ul>
+                                                     ) : "-"}
+                                                 </td>
+                                                 <td>
+                                                     {!isPresent && (
+                                                         <Button 
+                                                            variant="outline-primary" 
+                                                            size="sm"
+                                                            onClick={() => handleManualMarkClick(stu.id)}
+                                                         >
+                                                             Manual Mark
+                                                         </Button>
+                                                     )}
                                                  </td>
                                              </tr>
                                          );

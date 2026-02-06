@@ -182,7 +182,7 @@ public class CourseServiceImpl implements CourseService {
         }
         return studentRepository.findAllById(studentIds).stream()
                 .map(s -> new com.example.Attendance_System_UoK.dto.StudentBasicInfo(
-                        s.getId(), s.getFullName(), s.getStudentId(), null))
+                        s.getId(), s.getFullName(), s.getStudentId(), null, null))
                 .collect(Collectors.toList());
     }
 

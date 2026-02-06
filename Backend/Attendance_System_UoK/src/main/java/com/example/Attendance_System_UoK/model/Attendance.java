@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Document(collection = "attendances")
@@ -17,6 +18,14 @@ public class Attendance {
     private String id;
     private String sessionId;
     private String studentId;
-    private LocalDateTime markedAt;
+    private LocalDateTime markedAt; // Keep for backward compatibility/last marked time
+    private List<LocalDateTime> checkInTimes;
     private String status; // "PRESENT"
+
+    // Manual Marking
+    private boolean isManuallyMarked;
+    private String manualMarkNote;
+
+    // Anti-Fraud
+    private String deviceStudentId; // ID of the student whose device token was used
 }

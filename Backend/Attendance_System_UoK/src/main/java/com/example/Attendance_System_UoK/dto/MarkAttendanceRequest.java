@@ -7,4 +7,5 @@ public class MarkAttendanceRequest {
     private String sessionId;
     private double lat;
     private double lng;
+    private String deviceToken;
 }

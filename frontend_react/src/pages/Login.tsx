@@ -27,7 +27,13 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       const response = await api.post('/api/auth/login', { email, password });
-      const { token, role, fullName, studentId, teacherId, adminId, degreeProgram, faculty } = response.data;
+      const { token, deviceToken, role, fullName, studentId, teacherId, adminId, degreeProgram, faculty } = response.data;
+      
+      // Device Lock Anti-Fraud
+      const existingDeviceToken = localStorage.getItem('device_token');
+      if (!existingDeviceToken && deviceToken) {
+          localStorage.setItem('device_token', deviceToken);
+      }
       
       auth?.login({
         token,
