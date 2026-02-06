@@ -142,8 +142,13 @@ public class SessionService {
             deviceOwnerId = deviceTokenUtil.decrypt(request.getDeviceToken());
         }
 
-        // We ALWAYS mark for the logged-in user (as per user requirement "student B can
-        // got attendance")
+        // Anti-Fraud: Check for mismatch
+        boolean isFraud = false;
+        if (deviceOwnerId != null && !deviceOwnerId.equals(loggedInStudentId)) {
+            isFraud = true;
+            // We do NOT throw exception anymore. We log it.
+        }
+
         String studentId = loggedInStudentId;
 
         // 2. Retrieve existing attendance or create new
@@ -166,14 +171,20 @@ public class SessionService {
             attendance.setDeviceStudentId(deviceOwnerId); // Log the device owner
             attendance.setCheckInTimes(new java.util.ArrayList<>(java.util.Collections.singletonList(now)));
             attendance.setMarkedAt(now);
-            // Only set PRESENT if required is 1 (or 0)
-            if (session.getRequiredCheckIns() <= 1) {
+
+            if (isFraud) {
+                attendance.setStatus("FRAUD");
+            } else if (session.getRequiredCheckIns() <= 1) {
                 attendance.setStatus("PRESENT");
             } else {
                 attendance.setStatus("IN_PROGRESS");
             }
         } else {
             // Subsequent Check-in
+            if (isFraud) {
+                attendance.setStatus("FRAUD");
+            }
+
             if (attendance.getCheckInTimes() == null) {
                 attendance.setCheckInTimes(new java.util.ArrayList<>());
             }
@@ -196,14 +207,18 @@ public class SessionService {
             }
 
             attendance.getCheckInTimes().add(now);
-            attendance.setMarkedAt(now); // Update last marked time
+            attendance.setMarkedAt(now);
 
-            if (attendance.getCheckInTimes().size() >= session.getRequiredCheckIns()) {
-                attendance.setStatus("PRESENT");
+            // Update status only if not already FRAUD
+            if (!"FRAUD".equals(attendance.getStatus())) {
+                if (attendance.getCheckInTimes().size() >= session.getRequiredCheckIns()) {
+                    attendance.setStatus("PRESENT");
+                }
             }
         }
 
         return attendanceRepository.save(attendance);
+
     }
 
     // Duplicate block removed

@@ -16,12 +16,15 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final StudentRepository studentRepository;
     private final com.example.Attendance_System_UoK.repository.SessionRepository sessionRepository;
+    private final com.example.Attendance_System_UoK.repository.CourseRepository courseRepository;
 
     public AttendanceService(AttendanceRepository attendanceRepository, StudentRepository studentRepository,
-            com.example.Attendance_System_UoK.repository.SessionRepository sessionRepository) {
+            com.example.Attendance_System_UoK.repository.SessionRepository sessionRepository,
+            com.example.Attendance_System_UoK.repository.CourseRepository courseRepository) {
         this.attendanceRepository = attendanceRepository;
         this.studentRepository = studentRepository;
         this.sessionRepository = sessionRepository;
+        this.courseRepository = courseRepository;
     }
 
     public List<StudentBasicInfo> getAttendanceBySessionId(String sessionId) {
@@ -40,9 +43,10 @@ public class AttendanceService {
                 }
 
                 return new StudentBasicInfo(student.getId(), student.getFullName(), student.getStudentId(),
-                        att.getMarkedAt(), deviceMismatchInfo);
+                        att.getMarkedAt(), deviceMismatchInfo, att.getStatus());
             }
-            return new StudentBasicInfo(att.getStudentId(), "Unknown", "Unknown", att.getMarkedAt(), null);
+            return new StudentBasicInfo(att.getStudentId(), "Unknown", "Unknown", att.getMarkedAt(), null,
+                    att.getStatus());
         }).collect(Collectors.toList());
     }
 
@@ -105,5 +109,76 @@ public class AttendanceService {
         return attendanceRepository.findByStudentId(studentId).stream()
                 .map(Attendance::getSessionId)
                 .collect(Collectors.toList());
+    }
+
+    public List<com.example.Attendance_System_UoK.dto.CourseAttendanceReportDTO> getCourseAttendanceReport(
+            String courseId) {
+        // 1. Get Course to find students
+        com.example.Attendance_System_UoK.model.Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        List<String> studentIds = course.getStudentIds();
+        if (studentIds == null)
+            studentIds = new java.util.ArrayList<>();
+
+        // 2. Get All Sessions for Course
+        List<com.example.Attendance_System_UoK.model.Session> sessions = sessionRepository.findByCourseId(courseId);
+
+        // 3. Pre-fetch all attendance for these sessions (optimization possible, but
+        // simple for now)
+        // We will query per student or fetch all and filter in memory.
+        // Given MongoDB, let's fetch by sessionId IN [...] list
+        List<String> sessionIds = sessions.stream().map(com.example.Attendance_System_UoK.model.Session::getId)
+                .collect(Collectors.toList());
+        List<Attendance> allAttendance = attendanceRepository.findBySessionIdIn(sessionIds);
+
+        // Map: StudentID -> SessionID -> Status
+        java.util.Map<String, java.util.Map<String, String>> studentSessionStatus = new java.util.HashMap<>();
+
+        for (Attendance att : allAttendance) {
+            studentSessionStatus.computeIfAbsent(att.getStudentId(), k -> new java.util.HashMap<>())
+                    .put(att.getSessionId(), att.getStatus());
+        }
+
+        // 4. Build Report
+        List<Student> students = studentRepository.findAllById(studentIds);
+
+        return students.stream().map(student -> {
+            java.util.Map<String, String> statusMap = new java.util.HashMap<>();
+            int presentCount = 0;
+            int totalSessions = 0; // Only count PAST/EXPIRED sessions for percentage? Or all? Usually expired.
+
+            for (com.example.Attendance_System_UoK.model.Session session : sessions) {
+                // Check if session is expired or active?
+                // Usually gradebook shows everything.
+
+                String status = studentSessionStatus.getOrDefault(student.getId(), new java.util.HashMap<>())
+                        .getOrDefault(session.getId(), "ABSENT");
+
+                // Override if not marked and session is future? No, default ABSENT is fine for
+                // now,
+                // maybe UI handles "FUTURE" display.
+                // Let's refine: If session is SCHEDULED (future), status could be "-".
+                if (session.getStatus() == com.example.Attendance_System_UoK.model.SessionStatus.SCHEDULED) {
+                    status = "-";
+                } else {
+                    totalSessions++;
+                    if ("PRESENT".equals(status)) {
+                        presentCount++;
+                    }
+                }
+                statusMap.put(session.getId(), status);
+            }
+
+            double percentage = totalSessions > 0 ? (double) presentCount / totalSessions * 100 : 0;
+
+            return new com.example.Attendance_System_UoK.dto.CourseAttendanceReportDTO(
+                    student.getId(),
+                    student.getFullName(),
+                    student.getStudentId(),
+                    statusMap,
+                    Math.round(percentage * 10.0) / 10.0 // 1 decimal place
+            );
+        }).collect(Collectors.toList());
     }
 }

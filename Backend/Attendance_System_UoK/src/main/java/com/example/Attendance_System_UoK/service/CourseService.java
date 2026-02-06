@@ -26,4 +26,6 @@ public interface CourseService {
     void deleteCourse(String courseId);
 
     Course createCourseForAdmin(CreateCourseDTO dto, String teacherId);
+
+    void toggleArchiveStatus(String courseId, boolean status);
 }

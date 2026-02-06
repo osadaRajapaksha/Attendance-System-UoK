@@ -142,4 +142,16 @@ public class CourseController {
             @RequestParam String teacherId) {
         return courseService.createCourseForAdmin(dto, teacherId);
     }
+
+    @PutMapping("/{id}/archive")
+    @PreAuthorize("hasRole('TEACHER')")
+    public void archiveCourse(@PathVariable String id) {
+        courseService.toggleArchiveStatus(id, true);
+    }
+
+    @PutMapping("/{id}/unarchive")
+    @PreAuthorize("hasRole('TEACHER')")
+    public void unarchiveCourse(@PathVariable String id) {
+        courseService.toggleArchiveStatus(id, false);
+    }
 }

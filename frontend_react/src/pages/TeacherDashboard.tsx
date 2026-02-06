@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Button, Modal, Form, Alert, Spinner, Card, Row, Col, Badge } from 'react-bootstrap';
+import { Container, Button, Modal, Form, Alert, Spinner, Card, Row, Col, Badge, Tabs, Tab } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -7,12 +7,14 @@ interface Course {
   id: string;
   name: string;
   code: string;
+  archived: boolean;
 }
 
 const TeacherDashboard: React.FC = () => {
   const [myCourses, setMyCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('active');
   
   // Form State
   const [newCourse, setNewCourse] = useState({ name: '', code: '', enrollmentKey: '' });
@@ -49,26 +51,50 @@ const TeacherDashboard: React.FC = () => {
     }
   };
 
+  const handleArchiveToggle = async (course: Course) => {
+      const endpoint = course.archived ? `/api/courses/${course.id}/unarchive` : `/api/courses/${course.id}/archive`;
+      try {
+          await api.put(endpoint);
+          setSuccess(course.archived ? 'Course restored' : 'Course archived');
+          fetchMyCourses();
+      } catch (err) {
+          console.error(err);
+          setError('Failed to update course status');
+      }
+  };
+
   const CourseCard = ({ course }: { course: Course }) => {
      return (
         <Col md={4} lg={3} className="mb-4">
-           <Card className="course-card h-100 border-0 shadow-sm">
+           <Card className={`course-card h-100 border-0 shadow-sm ${course.archived ? 'bg-light text-muted' : ''}`}>
               <Card.Body className="d-flex flex-column">
                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <Badge bg="primary" className="p-2 fs-6">{course.code}</Badge>
+                    <Badge bg={course.archived ? "secondary" : "primary"} className="p-2 fs-6">{course.code}</Badge>
+                    {course.archived && <Badge bg="warning" text="dark">Archived</Badge>}
                  </div>
                  <Card.Title className="fw-bold fs-5 mb-3">{course.name}</Card.Title>
-                 <Card.Text className="text-muted flex-grow-1">
-                    Manage and view details for {course.name}.
-                 </Card.Text>
-                 <div className="mt-3">
-                    <Button variant="outline-primary" className="w-100" as={Link} to={`/teacher/course/${course.id}`}>View Details</Button>
+                 
+                 <div className="mt-auto pt-3 d-flex gap-2 flex-column">
+                    <Button variant="outline-primary" className="w-100" as={Link} to={`/teacher/course/${course.id}`}>
+                        {course.archived ? 'View Archived Details' : 'View Details'}
+                    </Button>
+                    <Button 
+                        variant={course.archived ? "outline-success" : "outline-secondary"} 
+                        size="sm" 
+                        className="w-100"
+                        onClick={() => handleArchiveToggle(course)}
+                    >
+                        {course.archived ? 'Restore Course' : 'Archive Course'}
+                    </Button>
                  </div>
               </Card.Body>
            </Card>
         </Col>
      );
   };
+
+  const activeCourses = myCourses.filter(c => !c.archived);
+  const archivedCourses = myCourses.filter(c => c.archived);
 
   return (
     <Container className="mt-5">
@@ -85,19 +111,32 @@ const TeacherDashboard: React.FC = () => {
       {loading ? (
           <div className="text-center mt-5"><Spinner animation="border" variant="primary" /></div>
       ) : (
-         <Row className="g-4">
-            {myCourses.map(course => (
-               <CourseCard key={course.id} course={course} />
-            ))}
-            {myCourses.length === 0 && (
-               <Col xs={12} className="text-center mt-5">
-                  <div className="p-5 bg-light rounded-3">
-                     <p className="text-muted fs-4 mb-3">No courses created yet.</p>
-                     <Button variant="primary" onClick={() => setShowModal(true)}>Create Your First Course</Button>
-                  </div>
-               </Col>
-            )}
-         </Row>
+         <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'active')} className="mb-4">
+             <Tab eventKey="active" title={`Active (${activeCourses.length})`}>
+                 <Row className="g-4">
+                    {activeCourses.map(course => (
+                       <CourseCard key={course.id} course={course} />
+                    ))}
+                    {activeCourses.length === 0 && (
+                       <Col xs={12} className="text-center mt-5">
+                          <p className="text-muted">No active courses.</p>
+                       </Col>
+                    )}
+                 </Row>
+             </Tab>
+             <Tab eventKey="archived" title={`Archived (${archivedCourses.length})`}>
+                 <Row className="g-4">
+                    {archivedCourses.map(course => (
+                       <CourseCard key={course.id} course={course} />
+                    ))}
+                    {archivedCourses.length === 0 && (
+                       <Col xs={12} className="text-center mt-5">
+                          <p className="text-muted">No archived courses.</p>
+                       </Col>
+                    )}
+                 </Row>
+             </Tab>
+         </Tabs>
       )}
 
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>

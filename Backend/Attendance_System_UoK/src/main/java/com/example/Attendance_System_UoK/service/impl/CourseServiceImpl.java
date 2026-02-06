@@ -181,8 +181,8 @@ public class CourseServiceImpl implements CourseService {
             return List.of();
         }
         return studentRepository.findAllById(studentIds).stream()
-                .map(s -> new com.example.Attendance_System_UoK.dto.StudentBasicInfo(
-                        s.getId(), s.getFullName(), s.getStudentId(), null, null))
+                .map(s -> new com.example.Attendance_System_UoK.dto.StudentBasicInfo(s.getId(), s.getFullName(),
+                        s.getStudentId(), null, null, null))
                 .collect(Collectors.toList());
     }
 
@@ -210,5 +210,13 @@ public class CourseServiceImpl implements CourseService {
         c.setStudentIds(List.of());
 
         return courseRepository.save(c);
+    }
+
+    @Override
+    public void toggleArchiveStatus(String courseId, boolean status) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+        course.setArchived(status);
+        courseRepository.save(course);
     }
 }

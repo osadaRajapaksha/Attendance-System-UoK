@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Container, Button, Card, Row, Col, Spinner, Alert, Modal, Table, Tabs, Tab, Badge, Form } from 'react-bootstrap';
+import { Container, Button, Card, Row, Col, Spinner, Alert, Modal, Table, Tabs, Tab, Badge, Form, Pagination as ReactPagination } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, DrawingManager } from '@react-google-maps/api';
 import api from '../api/axios';
+import * as XLSX from 'xlsx';
 
 const containerStyle = {
   width: '100%',
@@ -13,6 +14,9 @@ const defaultCenter = {
   lat: 7.2906, 
   lng: 80.6337
 };
+
+// Pagination Logic
+const ITEMS_PER_PAGE = 50;
 
 const TeacherCourseDetails: React.FC = () => {
     const { courseId } = useParams<{ courseId: string }>();
@@ -31,11 +35,40 @@ const TeacherCourseDetails: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     
+    // Pagination State
+    const [studentPage, setStudentPage] = useState(1);
+    const [attendancePage, setAttendancePage] = useState(1);
+    
+    const paginate = (items: any[], page: number) => {
+        const start = (page - 1) * ITEMS_PER_PAGE;
+        return items.slice(start, start + ITEMS_PER_PAGE);
+    };
+    
     // Attendance Modal State
     const [showModal, setShowModal] = useState(false);
     const [selectedSessionTitle, setSelectedSessionTitle] = useState('');
     const [attendanceList, setAttendanceList] = useState<any[]>([]);
     const [loadingAttendance, setLoadingAttendance] = useState(false);
+
+    // Gradebook State
+    const [loadingGradebook, setLoadingGradebook] = useState(false);
+    const [gradebookData, setGradebookData] = useState<any[]>([]);
+
+    const fetchGradebook = async () => {
+        setLoadingGradebook(true);
+        try {
+            const res = await api.get(`/api/attendance/course/${courseId}/report`);
+            setGradebookData(res.data);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to fetch gradebook");
+        } finally {
+            setLoadingGradebook(false);
+        }
+    };
+
+    // Sort sessions for gradebook cols
+    const sortedSessions = [...sessions].sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     // Edit Modal State
     const [showEditModal, setShowEditModal] = useState(false);
@@ -130,6 +163,21 @@ const TeacherCourseDetails: React.FC = () => {
         } catch (err) {
             console.error(err);
             alert("Failed to update session");
+        }
+    };
+
+    const handleExtendSession = async (session: any, minutes: number) => {
+        const currentEnd = new Date(session.endTime);
+        const newEnd = new Date(currentEnd.getTime() + minutes * 60000);
+        
+        try {
+            await api.put(`/api/sessions/update/${session.id}`, {
+                endTime: newEnd.toISOString()
+            });
+            fetchCourseDetails(); // Refresh to update status
+        } catch (err) {
+            console.error(err);
+            alert("Failed to extend session");
         }
     };
 
@@ -231,6 +279,48 @@ const TeacherCourseDetails: React.FC = () => {
         }
     };
 
+    const handleDownloadExcel = () => {
+        if (enrolledStudents.length === 0) return;
+
+        const data = enrolledStudents.map(student => ({
+            "Full Name": student.fullName,
+            "Student ID": student.studentId
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "Enrolled Students");
+        XLSX.writeFile(wb, `${course.code}_Enrolled_Students.xlsx`);
+    };
+
+    const handleDownloadAttendanceExcel = () => {
+        if (enrolledStudents.length === 0) return;
+
+        const data = enrolledStudents.map(student => {
+            const attendanceRecord = attendanceList.find((att: any) => att.studentId === student.id || att.studentId === student.studentId);
+            const isPresent = attendanceRecord && attendanceRecord.status === 'PRESENT';
+            const isFraud = attendanceRecord && attendanceRecord.status === 'FRAUD';
+            
+            let status = "ABSENT";
+            if (isPresent) status = "PRESENT";
+            if (isFraud) status = "FRAUD (Device Mismatch)";
+            if (attendanceRecord?.isManuallyMarked) status += " (Manual)";
+
+            return {
+                "Full Name": student.fullName,
+                "Student ID": student.studentId,
+                "Status": status,
+                "Check-in Time": attendanceRecord?.checkInTimes ? new Date(attendanceRecord.checkInTimes[0]).toLocaleTimeString() : "-",
+                "Notes": attendanceRecord?.manualMarkNote || ""
+            };
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+        XLSX.writeFile(wb, `${course.code}_${selectedSessionTitle}_Attendance.xlsx`);
+    };
+
     if (loading) return <Container className="mt-5 text-center"><Spinner animation="border" /></Container>;
     if (error) return <Container className="mt-5"><Alert variant="danger">{error}</Alert></Container>;
     if (!course) return <Container className="mt-5"><Alert variant="warning">Course not found</Alert></Container>;
@@ -247,7 +337,9 @@ const TeacherCourseDetails: React.FC = () => {
                 </Button>
             </div>
             
-            <Tabs defaultActiveKey="sessions" className="mb-3">
+            <Tabs defaultActiveKey="sessions" className="mb-3" onSelect={(k) => {
+                if (k === 'gradebook') fetchGradebook();
+            }}>
                 <Tab eventKey="sessions" title="Sessions">
                     <Tabs defaultActiveKey="active" id="session-status-tabs" className="mb-3">
                         {['ACTIVE', 'SCHEDULED', 'EXPIRED', 'DELETED'].map((status) => {
@@ -302,11 +394,25 @@ const TeacherCourseDetails: React.FC = () => {
                                                                     status === 'SCHEDULED' ? 'primary' : 
                                                                     status === 'DELETED' ? 'danger' : 'secondary'
                                                                 }>{s.status}</Badge>
-                                                                {status !== 'DELETED' && (
-                                                                    <Button variant="outline-primary" size="sm" onClick={() => handleViewAttendance(s)}>
-                                                                        View Attendance
-                                                                    </Button>
-                                                                )}
+                                                                
+                                                                <div className="d-flex gap-2">
+                                                                    {status === 'ACTIVE' && (
+                                                                        <>
+                                                                            <Button variant="outline-success" size="sm" onClick={() => handleExtendSession(s, 10)}>
+                                                                                +10m
+                                                                            </Button>
+                                                                            <Button variant="outline-success" size="sm" onClick={() => handleExtendSession(s, 30)}>
+                                                                                +30m
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                
+                                                                    {status !== 'DELETED' && (
+                                                                        <Button variant="outline-primary" size="sm" onClick={() => handleViewAttendance(s)}>
+                                                                            View Attendance
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </Card.Body>
                                                     </Card>
@@ -319,10 +425,77 @@ const TeacherCourseDetails: React.FC = () => {
                         })}
                     </Tabs>
                 </Tab>
+                <Tab eventKey="gradebook" title="Gradebook / Analytics">
+                    <Card>
+                        <Card.Body>
+                            {loadingGradebook ? <Spinner animation="border" /> : (
+                                <div style={{ overflowX: 'auto' }}>
+                                    <Table bordered hover size="sm" className="mb-0">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th style={{ minWidth: '200px', position: 'sticky', left: 0, background: '#f8f9fa', zIndex: 1 }}>Student</th>
+                                                <th className="text-center">Overall %</th>
+                                                {sortedSessions.map((sess: any) => (
+                                                    <th key={sess.id} style={{ minWidth: '100px', fontSize: '0.85rem' }} title={new Date(sess.startTime).toLocaleString()}>
+                                                        {sess.title} <br/>
+                                                        <small className="text-muted">{new Date(sess.startTime).toLocaleDateString()}</small>
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {gradebookData.map((row: any) => (
+                                                <tr key={row.studentId}>
+                                                    <td style={{ position: 'sticky', left: 0, background: 'white', fontWeight: '500' }}>
+                                                        {row.fullName} <br/>
+                                                        <small className="text-muted">{row.indexNumber}</small>
+                                                    </td>
+                                                    <td className="text-center fw-bold">
+                                                        <Badge bg={row.overallPercentage >= 80 ? 'success' : row.overallPercentage >= 50 ? 'warning' : 'danger'}>
+                                                            {row.overallPercentage}%
+                                                        </Badge>
+                                                    </td>
+                                                    {sortedSessions.map((sess: any) => {
+                                                        const status = row.sessionStatusMap[sess.id] || "ABSENT";
+                                                        let cellBg = "";
+                                                        let icon = "";
+                                                        
+                                                        if (status === "PRESENT") {
+                                                            cellBg = "table-success";
+                                                            icon = "✔";
+                                                        } else if (status === "-") {
+                                                            cellBg = "table-light"; // Future
+                                                            icon = "-";
+                                                        } else {
+                                                            cellBg = "table-danger";
+                                                            icon = "✘";
+                                                        }
+
+                                                        return (
+                                                            <td key={sess.id} className={`text-center ${cellBg}`}>
+                                                                {icon}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            )}
+                        </Card.Body>
+                    </Card>
+                </Tab>
                 <Tab eventKey="students" title={`Enrolled Students (${enrolledStudents.length})`}>
                     <Card>
                         <Card.Body>
+                            <div className="d-flex justify-content-end mb-3">
+                                <Button variant="success" size="sm" onClick={handleDownloadExcel} disabled={enrolledStudents.length === 0}>
+                                    <i className="bi bi-file-earmark-spreadsheet me-2"></i> Download Excel
+                                </Button>
+                            </div>
                             {enrolledStudents.length === 0 ? <p>No students enrolled.</p> : (
+                                <>
                                 <Table striped bordered hover responsive>
                                     <thead>
                                         <tr>
@@ -332,7 +505,7 @@ const TeacherCourseDetails: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {enrolledStudents.map((stu: any) => (
+                                        {paginate(enrolledStudents, studentPage).map((stu: any) => (
                                             <tr key={stu.id}>
                                                 <td>{stu.fullName}</td>
                                                 <td>{stu.studentId}</td>
@@ -349,6 +522,20 @@ const TeacherCourseDetails: React.FC = () => {
                                         ))}
                                     </tbody>
                                 </Table>
+                                {enrolledStudents.length > ITEMS_PER_PAGE && (
+                                     <div className="d-flex justify-content-center mt-3">
+                                         <ReactPagination>
+                                             <ReactPagination.First onClick={() => setStudentPage(1)} disabled={studentPage === 1} />
+                                             <ReactPagination.Prev onClick={() => setStudentPage(p => Math.max(1, p - 1))} disabled={studentPage === 1} />
+                                             
+                                             <ReactPagination.Item active>{studentPage}</ReactPagination.Item>
+                                             
+                                             <ReactPagination.Next onClick={() => setStudentPage(p => p + 1)} disabled={studentPage * ITEMS_PER_PAGE >= enrolledStudents.length} />
+                                             <ReactPagination.Last onClick={() => setStudentPage(Math.ceil(enrolledStudents.length / ITEMS_PER_PAGE))} disabled={studentPage * ITEMS_PER_PAGE >= enrolledStudents.length} />
+                                         </ReactPagination>
+                                     </div>
+                                )}
+                                </>
                             )}
                         </Card.Body>
                     </Card>
@@ -466,13 +653,19 @@ const TeacherCourseDetails: React.FC = () => {
             </Modal>
 
             {/* Attendance Modal */}
-            <Modal show={showModal} onHide={() => setShowModal(false)} size="xl">
+            <Modal show={showModal} onHide={() => { setShowModal(false); setAttendancePage(1); }} size="xl">
                 <Modal.Header closeButton>
                     <Modal.Title>Attendance: {selectedSessionTitle}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {loadingAttendance ? <Spinner animation="border" /> : (
                          enrolledStudents.length === 0 ? <p>No students enrolled in this course.</p> : (
+                            <>
+                             <div className="d-flex justify-content-end mb-2">
+                                 <Button variant="success" size="sm" onClick={handleDownloadAttendanceExcel}>
+                                     <i className="bi bi-file-earmark-spreadsheet me-2"></i> Download Excel
+                                 </Button>
+                             </div>
                              <Table striped hover responsive>
                                  <thead>
                                      <tr>
@@ -484,20 +677,14 @@ const TeacherCourseDetails: React.FC = () => {
                                      </tr>
                                  </thead>
                                  <tbody>
-                                     {enrolledStudents.map((stu: any) => {
+                                     {paginate(enrolledStudents, attendancePage).map((stu: any) => {
                                          const attendanceRecord = attendanceList.find((att: any) => att.studentId === stu.id || att.studentId === stu.studentId);
-                                         
-                                         // Status Logic: 
-                                         // If manually marked: PRESENT (Manual)
-                                         // If normal: check if completed required check-ins? 
-                                         // The backend session service should ideally tell us completion status, but here we have raw Attendance object.
-                                         // We can check logic: attendanceRecord.status === 'PRESENT'
                                          
                                          const isPresent = attendanceRecord && attendanceRecord.status === 'PRESENT';
                                          const isManual = attendanceRecord?.isManuallyMarked;
                                          
                                          return (
-                                             <tr key={stu.id} className={isPresent ? "table-success" : ""}>
+                                             <tr key={stu.id} className={attendanceRecord?.status === 'FRAUD' ? "table-warning" : isPresent ? "table-success" : ""}>
                                                  <td>{stu.fullName}</td>
                                                  <td>{stu.studentId}</td>
                                                  <td>
@@ -505,7 +692,11 @@ const TeacherCourseDetails: React.FC = () => {
                                                          <Badge bg="success">
                                                             Present {isManual ? '(Manual)' : ''}
                                                          </Badge>
-                                                     ) : <Badge bg="danger">Absent</Badge>}
+                                                     ) : attendanceRecord?.status === 'FRAUD' ? (
+                                                         <Badge bg="warning" text="dark">⚠ Device Mismatch</Badge>
+                                                     ) : (
+                                                         <Badge bg="danger">Absent</Badge>
+                                                     )}
                                                  </td>
                                                  <td>
                                                      {attendanceRecord ? (
@@ -520,7 +711,7 @@ const TeacherCourseDetails: React.FC = () => {
                                                                     Device Owner: {attendanceRecord.deviceMismatchInfo}
                                                                 </li>
                                                             )}
-                                                        </ul>
+                                                         </ul>
                                                      ) : "-"}
                                                  </td>
                                                  <td>
@@ -530,7 +721,7 @@ const TeacherCourseDetails: React.FC = () => {
                                                             size="sm"
                                                             onClick={() => handleManualMarkClick(stu.id)}
                                                          >
-                                                             Manual Mark
+                                                              Manual Mark
                                                          </Button>
                                                      )}
                                                  </td>
@@ -539,6 +730,22 @@ const TeacherCourseDetails: React.FC = () => {
                                      })}
                                  </tbody>
                              </Table>
+                             {/* Pagination Control */}
+                             {enrolledStudents.length > ITEMS_PER_PAGE && (
+                                 <div className="d-flex justify-content-center mt-3">
+                                     <ReactPagination>
+                                         <ReactPagination.First onClick={() => setAttendancePage(1)} disabled={attendancePage === 1} />
+                                         <ReactPagination.Prev onClick={() => setAttendancePage(p => Math.max(1, p - 1))} disabled={attendancePage === 1} />
+                                         
+                                         {/* Simple logic: show current page */}
+                                         <ReactPagination.Item active>{attendancePage}</ReactPagination.Item>
+                                         
+                                         <ReactPagination.Next onClick={() => setAttendancePage(p => p + 1)} disabled={attendancePage * ITEMS_PER_PAGE >= enrolledStudents.length} />
+                                         <ReactPagination.Last onClick={() => setAttendancePage(Math.ceil(enrolledStudents.length / ITEMS_PER_PAGE))} disabled={attendancePage * ITEMS_PER_PAGE >= enrolledStudents.length} />
+                                     </ReactPagination>
+                                 </div>
+                             )}
+                            </>
                          )
                     )}
                 </Modal.Body>

@@ -54,4 +54,11 @@ public class AttendanceController {
         attendanceService.manualMarkAttendance(request.getSessionId(), request.getStudentId(), request.getNote());
         return ResponseEntity.ok("Attendance manually marked successfully.");
     }
+
+    @GetMapping("/course/{courseId}/report")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<com.example.Attendance_System_UoK.dto.CourseAttendanceReportDTO>> getCourseAttendanceReport(
+            @PathVariable String courseId) {
+        return ResponseEntity.ok(attendanceService.getCourseAttendanceReport(courseId));
+    }
 }

@@ -18,4 +18,6 @@ public class Course {
     private String teacherId; // owner (Teacher.id)
     private String enrollmentKey;
     private List<String> studentIds = new ArrayList<>(); // enrolled student ids
+
+    private boolean isArchived = false;
 }
