@@ -31,7 +31,6 @@ const Register: React.FC = () => {
     password: '',
     faculty: 'Science',
     degreeProgram: '',
-    studentId: '',
     otp: '',
     agreeToTerms: false
   });
@@ -87,13 +86,7 @@ const Register: React.FC = () => {
         return;
     }
 
-    // Student ID Validation
-    const studentIdRegex = /^[A-Z]{2}\/\d{4}\/\d{3,5}$/;
-    if (!studentIdRegex.test(formData.studentId)) {
-        setError("Invalid Student ID format. Use XX/XXXX/XXX or XX/XXXX/XXXX (e.g. EC/2021/071)");
-        setLoading(false);
-        return;
-    }
+
 
     try {
       await api.post('/api/auth/register', formData);
@@ -185,20 +178,7 @@ const Register: React.FC = () => {
             )}
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Student ID</Form.Label>
-            <Form.Control 
-              type="text" 
-              name="studentId"
-              placeholder="XX/XXXX/XXXX" 
-              value={formData.studentId}
-              onChange={handleChange}
-              required 
-            />
-             <Form.Text className="text-muted">
-              Format: XX/XXXX/XXXX or XX/XXXX/XXXXX (First 2 letters must be capital)
-            </Form.Text>
-          </Form.Group>
+
 
 
 

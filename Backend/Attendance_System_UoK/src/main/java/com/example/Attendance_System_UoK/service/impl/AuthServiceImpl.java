@@ -41,11 +41,36 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Invalid or expired OTP");
         }
 
-        // Validate Student ID
-        String studentId = request.getStudentId();
-        if (studentId == null || !studentId.matches("^[A-Z]{2}/\\d{4}/\\d{3,5}$")) {
+        // Extract Student ID from Email
+        // Format: name-XXYYZZZ@stu.kln.ac.lk -> XX/20YY/ZZZ
+        // Example: madhuma-ec21071@stu.kln.ac.lk -> EC/2021/071
+        String email = request.getEmail();
+        String studentId = null;
+
+        // Regex to match: any chars + hyphen + 2 letters + 2 digits + 3 or more digits
+        // + @stu.kln.ac.lk
+        java.util.regex.Pattern pattern = java.util.regex.Pattern
+                .compile(".*-([a-zA-Z]{2})(\\d{2})(\\d{3,})@stu\\.kln\\.ac\\.lk$");
+        java.util.regex.Matcher matcher = pattern.matcher(email);
+
+        if (matcher.find()) {
+            String dept = matcher.group(1).toUpperCase();
+            String year = "20" + matcher.group(2);
+            String number = matcher.group(3);
+            studentId = dept + "/" + year + "/" + number;
+        } else {
+            // Fallback or Error?
+            // Since it is a student registration, we arguably should require this format.
+            // OR we fallback to request.getStudentId() if verified?
+            // User Request implies we should extract it. If it fails, it's not a valid
+            // student email for this system?
+            // Let's fallback to manual entry if extraction fails, OR throw error if user
+            // insists on only extraction.
+            // User said: "no need to input student number in registe.its can axtract by
+            // email"
+            // So we enforce the email format.
             throw new RuntimeException(
-                    "Invalid Student ID format. Expected format: XX/year/number (e.g., SE/2021/001, SC/2022/071)");
+                    "Invalid Student Email Format. Expected: name-deptYearNumber@stu.kln.ac.lk (e.g., name-ec21071@stu.kln.ac.lk)");
         }
 
         Student student = new Student();
@@ -58,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
         student.setCreatedAt(LocalDateTime.now());
         student.setUpdatedAt(LocalDateTime.now());
 
-        student.setStudentId(request.getStudentId());
+        student.setStudentId(studentId);
         student.setDegreeProgram(request.getDegreeProgram());
         student.setDepartment(request.getDepartment());
         student.setFaculty(request.getFaculty());

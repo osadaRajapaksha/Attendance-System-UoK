@@ -13,7 +13,7 @@ public class StudentBasicInfo {
     private String fullName;
     private String studentId; // e.g., index number
     private LocalDateTime markedAt; // Optional, for attendance list
-    private String deviceStudentId; // Potential fraud indicator
+    private String deviceMismatchInfo; // Potential fraud indicator (Owner Student ID)
 
     // New validation field
     private String status; // PRESENT, FRAUD, IN_PROGRESS
