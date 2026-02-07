@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Button, Form, Alert, Card, Tabs, Tab, Table, Badge, Row, Col, Spinner, InputGroup, Pagination, Modal, ListGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import * as XLSX from 'xlsx';
 
 const AdminDashboard: React.FC = () => {
     return (
@@ -699,15 +700,346 @@ const StudentDetailsModal = ({ show, onHide, student, refreshStudents }: { show:
     );
 };
 
-interface Course {
+import { GoogleMap, useJsApiLoader, DrawingManager } from '@react-google-maps/api';
+
+const containerStyle = {
+  width: '100%',
+  height: '300px'
+};
+
+const defaultCenter = {
+  lat: 7.2906, 
+  lng: 80.6337
+};
+
+interface Session {
     id: string;
-    name: string;
-    code: string;
-    teacherName?: string;
-    teacherId?: string;
-    enrollmentKey?: string;
-    description?: string;
+    title: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    courseId: string;
+    boundary?: any[];
 }
+
+const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }: { show: boolean, onHide: () => void, session: Session | null, course: Course | null, refreshSessions: () => void }) => {
+    const [activeTab, setActiveTab] = useState('details');
+    const [msg, setMsg] = useState({ type: '', content: '' });
+    const [attendanceList, setAttendanceList] = useState<any[]>([]);
+    const [loadingAttendance, setLoadingAttendance] = useState(false);
+    const [editData, setEditData] = useState<Partial<Session>>({});
+    
+    // Map State
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: "AIzaSyA2eLFexIQfCqji9Tgrb73vKVJh0Fm_RXs",
+        libraries: ['drawing', 'geometry']
+    });
+    const [map, setMap] = React.useState(null);
+    const [mapCenter, setMapCenter] = useState(defaultCenter);
+    const rectRef = React.useRef<any>(null);
+
+    // Manual Mark State
+    const [showManualMark, setShowManualMark] = useState(false);
+    const [manualStudentId, setManualStudentId] = useState('');
+    const [manualNote, setManualNote] = useState('');
+    const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (session && show) {
+            setEditData({
+                title: session.title,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                boundary: session.boundary || []
+            });
+            setMsg({ type: '', content: '' });
+            fetchAttendance();
+            fetchEnrolledStudents();
+            
+            // Try to get user location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        setMapCenter({
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        });
+                    }
+                );
+            }
+        }
+    }, [session, show]);
+
+    const onLoad = React.useCallback(function callback(map: any) {
+        setMap(map);
+    }, []);
+
+    const onUnmount = React.useCallback(function callback(map: any) {
+        setMap(null);
+    }, []);
+
+    const onRectangleComplete = (rect: any) => {
+        const bounds = rect.getBounds();
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        
+        const corners = [
+            { lat: ne.lat(), lng: ne.lng() }, 
+            { lat: sw.lat(), lng: ne.lng() }, 
+            { lat: sw.lat(), lng: sw.lng() }, 
+            { lat: ne.lat(), lng: sw.lng() }  
+        ];
+        
+        setEditData(prev => ({ ...prev, boundary: corners }));
+        
+        if (rectRef.current) {
+            rectRef.current.setMap(null);
+        }
+        rectRef.current = rect;
+    };
+
+    const fetchAttendance = async () => {
+        if (!session) return;
+        setLoadingAttendance(true);
+        try {
+            const res = await api.get(`/api/attendance/session/${session.id}`);
+            setAttendanceList(res.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingAttendance(false);
+        }
+    };
+
+    const fetchEnrolledStudents = async () => {
+        if (!course) return;
+        try {
+             const res = await api.get(`/api/courses/${course.id}/students`);
+             setEnrolledStudents(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!session) return;
+        try {
+            await api.put(`/api/sessions/update/${session.id}`, editData);
+            setMsg({ type: 'success', content: 'Session updated successfully' });
+            refreshSessions();
+        } catch (err: any) {
+            setMsg({ type: 'danger', content: err.response?.data?.message || 'Update failed' });
+        }
+    };
+
+    const handleManualMark = async () => {
+        if (!manualStudentId || !session) return;
+        try {
+            await api.post('/api/attendance/manual-mark', {
+                sessionId: session.id,
+                studentId: manualStudentId,
+                note: manualNote
+            });
+            setMsg({ type: 'success', content: 'Attendance marked successfully' });
+            setShowManualMark(false);
+            setManualStudentId('');
+            setManualNote('');
+            fetchAttendance();
+        } catch (err: any) {
+             setMsg({ type: 'danger', content: err.response?.data?.message || 'Manual mark failed' });
+        }
+    };
+
+    const handleDownloadExcel = () => {
+        if (!session || attendanceList.length === 0) return;
+
+        const data = enrolledStudents.map(student => {
+            const record = attendanceList.find((a: any) => a.studentId === student.id || a.studentId === student.studentId);
+            const isPresent = record && record.status === 'PRESENT';
+            const isFraud = record && record.status === 'FRAUD';
+            
+            let status = "ABSENT";
+            if (isPresent) status = "PRESENT";
+            if (isFraud) status = "FRAUD";
+            if (record?.isManuallyMarked) status += " (Manual)";
+
+            return {
+                "Student ID": student.studentId,
+                "Name": student.fullName,
+                "Status": status,
+                "Check-in Time": record?.checkInTimes ? new Date(record.checkInTimes[0]).toLocaleTimeString() : "-",
+                "Notes": record?.manualMarkNote || ""
+            };
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+        XLSX.writeFile(wb, `${course?.code}_${session.title}_Attendance.xlsx`);
+    };
+
+    if (!session) return null;
+
+    const isExpired = session.status === 'EXPIRED';
+
+    return (
+        <Modal show={show} onHide={onHide} size="lg">
+            <Modal.Header closeButton>
+                <Modal.Title>Session: {session.title}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {msg.content && <Alert variant={msg.type} dismissible onClose={() => setMsg({ type: '', content: '' })}>{msg.content}</Alert>}
+                <div className="mb-3">
+                    <Badge bg={session.status === 'ACTIVE' ? 'success' : session.status === 'SCHEDULED' ? 'primary' : session.status === 'EXPIRED' ? 'secondary' : 'danger'}>
+                        {session.status}
+                    </Badge>
+                </div>
+                
+                <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'details')} className="mb-3">
+                    <Tab eventKey="details" title="Details">
+                        <Form onSubmit={handleUpdate}>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Title</Form.Label>
+                                <Form.Control 
+                                    type="text" 
+                                    value={editData.title || ''} 
+                                    onChange={e => setEditData({...editData, title: e.target.value})} 
+                                    disabled={isExpired}
+                                    required 
+                                />
+                            </Form.Group>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2">
+                                        <Form.Label>Start Time</Form.Label>
+                                        <Form.Control 
+                                            type="datetime-local" 
+                                            value={editData.startTime ? new Date(editData.startTime).toISOString().slice(0, 16) : ''} 
+                                            onChange={e => setEditData({...editData, startTime: e.target.value})} 
+                                            disabled={isExpired}
+                                            required 
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2">
+                                        <Form.Label>End Time</Form.Label>
+                                        <Form.Control 
+                                            type="datetime-local" 
+                                            value={editData.endTime ? new Date(editData.endTime).toISOString().slice(0, 16) : ''} 
+                                            onChange={e => setEditData({...editData, endTime: e.target.value})} 
+                                            disabled={isExpired}
+                                            required 
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            
+                            {!isExpired && (
+                                <Form.Group className="mb-3 mt-3">
+                                    <Form.Label>Location (Redraw to update)</Form.Label>
+                                    {isLoaded ? (
+                                        <GoogleMap
+                                            mapContainerStyle={containerStyle}
+                                            center={mapCenter}
+                                            zoom={15}
+                                            onLoad={onLoad}
+                                            onUnmount={onUnmount}
+                                        >
+                                            <DrawingManager
+                                                onRectangleComplete={onRectangleComplete}
+                                                options={{
+                                                    drawingControl: true,
+                                                    drawingControlOptions: {
+                                                        drawingModes: ['rectangle' as any]
+                                                    },
+                                                    rectangleOptions: {
+                                                        editable: true,
+                                                        draggable: true
+                                                    }
+                                                }}
+                                            />
+                                        </GoogleMap>
+                                    ) : <Spinner animation="border" size="sm" />}
+                                </Form.Group>
+                            )}
+
+                            {!isExpired && (
+                                <div className="d-flex justify-content-end mt-3">
+                                    <Button variant="primary" type="submit">Update Session</Button>
+                                </div>
+                            )}
+                            {isExpired && <p className="text-muted mt-3">This session is expired and cannot be edited.</p>}
+                        </Form>
+                    </Tab>
+                    <Tab eventKey="attendance" title="Attendance">
+                        <div className="d-flex justify-content-end mb-3 gap-2">
+                             <Button variant="outline-primary" size="sm" onClick={() => setShowManualMark(!showManualMark)}>
+                                {showManualMark ? 'Hide Manual Mark' : 'Manual Mark'}
+                            </Button>
+                            <Button variant="success" size="sm" onClick={handleDownloadExcel}>
+                                Download Excel
+                            </Button>
+                        </div>
+                        
+                        {/* Manual Mark and Table logic continues here... */}
+
+                        {showManualMark && (
+                            <Card className="mb-3 p-3 bg-light">
+                                <h6>Manual Mark Attendance</h6>
+                                <Form className="d-flex gap-2 align-items-end">
+                                    <Form.Group className="flex-grow-1">
+                                        <Form.Label>Student</Form.Label>
+                                        <Form.Select value={manualStudentId} onChange={e => setManualStudentId(e.target.value)}>
+                                            <option value="">Select Student</option>
+                                            {enrolledStudents.map(s => (
+                                                <option key={s.id} value={s.id}>{s.fullName} ({s.studentId})</option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                    <Form.Group className="flex-grow-1">
+                                        <Form.Label>Note</Form.Label>
+                                        <Form.Control type="text" value={manualNote} onChange={e => setManualNote(e.target.value)} placeholder="Reason..." />
+                                    </Form.Group>
+                                    <Button variant="primary" onClick={handleManualMark} disabled={!manualStudentId}>Mark</Button>
+                                </Form>
+                            </Card>
+                        )}
+
+                        {loadingAttendance ? <Spinner animation="border" /> : (
+                            <div className="table-responsive" style={{ maxHeight: '400px' }}>
+                                <Table striped size="sm">
+                                    <thead><tr><th>Student</th><th>Status</th><th>Time</th><th>Notes</th></tr></thead>
+                                    <tbody>
+                                        {enrolledStudents.map(student => {
+                                            const record = attendanceList.find((a: any) => a.studentId === student.id || a.studentId === student.studentId);
+                                            const isPresent = record && record.status === 'PRESENT';
+                                            return (
+                                                <tr key={student.id}>
+                                                    <td>{student.fullName} <small className="text-muted">({student.studentId})</small></td>
+                                                    <td>
+                                                        {isPresent ? <Badge bg="success">Present</Badge> : 
+                                                         record?.status === 'FRAUD' ? <Badge bg="warning" text="dark">Fraud</Badge> : 
+                                                         <Badge bg="danger">Absent</Badge>}
+                                                        {record?.isManuallyMarked && <Badge bg="info" className="ms-1">Manual</Badge>}
+                                                    </td>
+                                                    <td>{record?.checkInTimes ? new Date(record.checkInTimes[0]).toLocaleTimeString() : '-'}</td>
+                                                    <td>{record?.manualMarkNote || '-'}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        )}
+                    </Tab>
+                </Tabs>
+            </Modal.Body>
+        </Modal>
+    );
+};
 
 const CourseDetailsModal = ({ show, onHide, course, refreshCourses }: { show: boolean, onHide: () => void, course: Course | null, refreshCourses: () => void }) => {
     const [activeTab, setActiveTab] = useState('details');
@@ -716,6 +1048,10 @@ const CourseDetailsModal = ({ show, onHide, course, refreshCourses }: { show: bo
     const [loadingDownload, setLoadingDownload] = useState(false);
     const [sessions, setSessions] = useState<any[]>([]);
     const [loadingSessions, setLoadingSessions] = useState(false);
+    
+    // Session Modal
+    const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+    const [showSessionModal, setShowSessionModal] = useState(false);
 
     useEffect(() => {
         if (course && show) {
@@ -794,6 +1130,11 @@ const CourseDetailsModal = ({ show, onHide, course, refreshCourses }: { show: bo
         }
     }
 
+    const openSessionDetails = (session: Session) => {
+        setSelectedSession(session);
+        setShowSessionModal(true);
+    };
+
     if (!course) return null;
 
     return (
@@ -826,23 +1167,23 @@ const CourseDetailsModal = ({ show, onHide, course, refreshCourses }: { show: bo
                     <Tab eventKey="sessions" title={`Sessions (${sessions.length})`}>
                        {loadingSessions ? <Spinner animation="border"/> : (
                            <div className="table-responsive" style={{maxHeight: '400px'}}>
-                               <Table striped size="sm">
+                               <Table striped size="sm" hover>
                                    <thead><tr><th>Date</th><th>Title</th><th>Status</th><th>Action</th></tr></thead>
                                    <tbody>
                                        {sessions.map(s => (
-                                           <tr key={s.id}>
+                                           <tr key={s.id} style={{cursor: 'pointer'}} onClick={() => openSessionDetails(s)}>
                                                <td>{new Date(s.startTime).toLocaleDateString()}</td>
                                                <td>{s.title}</td>
                                                <td><Badge bg={s.status === 'ACTIVE' ? 'success' : s.status === 'SCHEDULED' ? 'primary' : 'secondary'}>{s.status}</Badge></td>
                                                <td>
-                                                   <Button size="sm" variant="danger" onClick={() => handleDeleteSession(s.id)}>Delete</Button>
+                                                   <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id); }}>Delete</Button>
                                                </td>
                                            </tr>
                                        ))}
                                    </tbody>
                                </Table>
                                <div className="text-muted small mt-2">
-                                   * To create or edit sessions in detail, please instruct the assigned teacher or use the specific session management tools.
+                                   * Click on a row to view/edit details.
                                </div>
                            </div>
                        )}
@@ -868,6 +1209,14 @@ const CourseDetailsModal = ({ show, onHide, course, refreshCourses }: { show: bo
                     </Tab>
                 </Tabs>
             </Modal.Body>
+            
+            <SessionDetailsModal 
+                show={showSessionModal}
+                onHide={() => setShowSessionModal(false)}
+                session={selectedSession}
+                course={course}
+                refreshSessions={fetchSessions}
+            />
         </Modal>
     );
 };

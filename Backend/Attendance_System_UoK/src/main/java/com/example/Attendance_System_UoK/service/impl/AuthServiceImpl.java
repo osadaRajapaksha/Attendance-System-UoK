@@ -7,7 +7,6 @@ import com.example.Attendance_System_UoK.model.*;
 import com.example.Attendance_System_UoK.repository.*;
 import com.example.Attendance_System_UoK.security.JwtUtil;
 import com.example.Attendance_System_UoK.service.AuthService;
-import com.example.Attendance_System_UoK.service.OtpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,7 +19,6 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final UserRepository userRepository;
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
     private final AdminRepository adminRepository;
@@ -116,5 +114,26 @@ public class AuthServiceImpl implements AuthService {
                 user instanceof Student ? ((Student) user).getStudentId() : null,
                 user instanceof Student ? ((Student) user).getDegreeProgram() : null,
                 user.getFaculty());
+    }
+
+    @Override
+    public void resetPassword(String email, String otp, String newPassword) {
+        // 1. Validate OTP
+        if (!otpService.validateOtp(email, otp)) {
+            throw new RuntimeException("Invalid or expired OTP");
+        }
+
+        // 2. Find User
+        com.example.Attendance_System_UoK.service.UserService userService = new com.example.Attendance_System_UoK.service.UserService(
+                studentRepository, teacherRepository, adminRepository, passwordEncoder);
+
+        User user = userService.findUserByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with this email"));
+
+        // 3. Update Password
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        // 4. Save User
+        userService.saveUser(user);
     }
 }

@@ -16,6 +16,9 @@ public class OtpController {
     @Autowired
     private OtpService otpService;
 
+    @Autowired
+    private com.example.Attendance_System_UoK.service.UserService userService;
+
     // Allowed domains: outlook.com, hotmail.com, live.com, kln.ac.lk, stu.kln.ac.lk
     private static final Pattern MICROSOFT_DOMAIN_PATTERN = Pattern.compile(
             "^[A-Za-z0-9._%+-]+@(outlook\\.com|hotmail\\.com|live\\.com|kln\\.ac\\.lk|stu\\.kln\\.ac\\.lk)$",
@@ -24,10 +27,19 @@ public class OtpController {
     @PostMapping("/send")
     public ResponseEntity<?> sendOtp(@RequestBody Map<String, String> request) {
         String email = request.get("email");
+        boolean isForgotPassword = request.containsKey("isForgotPassword")
+                && Boolean.parseBoolean(request.get("isForgotPassword"));
 
         if (email == null || !MICROSOFT_DOMAIN_PATTERN.matcher(email).matches()) {
             return ResponseEntity.badRequest()
-                    .body("Invalid email domain. Only  University emails are allowed.");
+                    .body("Invalid email domain. Only University emails are allowed.");
+        }
+
+        // Check if user exists for Forgot Password flow
+        if (isForgotPassword) {
+            if (userService.findUserByEmail(email).isEmpty()) {
+                return ResponseEntity.badRequest().body("No user found with this email address.");
+            }
         }
 
         try {

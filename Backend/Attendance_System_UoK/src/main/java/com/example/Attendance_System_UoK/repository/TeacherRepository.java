@@ -12,7 +12,7 @@ import java.util.Optional;
 public interface TeacherRepository extends MongoRepository<Teacher, String> {
     Optional<Teacher> findByUsername(String username);
 
-
+    Optional<Teacher> findByEmail(String email);
 
     @Query("{ 'username': ?0 }")
     @Update("{ '$set': { 'lastLogin': ?1 } }")

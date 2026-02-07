@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface StudentRepository extends MongoRepository<Student, String> {
     Optional<Student> findByUsername(String username);
 
-    Optional<Object> findByEmail(String email);
+    Optional<Student> findByEmail(String email);
 
     @Query("{ 'username': ?0 }")
     @Update("{ '$set': { 'lastLogin': ?1 } }")

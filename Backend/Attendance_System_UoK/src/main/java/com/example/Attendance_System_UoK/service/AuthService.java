@@ -9,4 +9,6 @@ public interface AuthService {
     AuthResponse register(RegisterRequest request);
 
     AuthResponse login(LoginRequest request);
+
+    void resetPassword(String email, String otp, String newPassword);
 }

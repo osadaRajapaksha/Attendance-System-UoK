@@ -90,6 +90,9 @@ const Login: React.FC = () => {
           <Button variant="primary" type="submit" className="w-100" disabled={loading}>
             {loading ? <Spinner animation="border" size="sm" /> : 'Login'}
           </Button>
+          <div className="text-end mt-2">
+            <Link to="/forgot-password" style={{ fontSize: '0.9rem' }}>Forgot Password?</Link>
+          </div>
         </Form>
         <div className="w-100 text-center mt-3">
           Need an account? <Link to="/register">Sign Up</Link>

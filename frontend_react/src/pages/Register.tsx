@@ -32,7 +32,8 @@ const Register: React.FC = () => {
     faculty: 'Science',
     degreeProgram: '',
     studentId: '',
-    otp: ''
+    otp: '',
+    agreeToTerms: false
   });
 
   const [error, setError] = useState('');
@@ -228,6 +229,16 @@ const Register: React.FC = () => {
               ))}
             </Form.Select>
              {formData.faculty !== "Science" && <Form.Text className="text-muted">Only available for Science faculty currently.</Form.Text>}
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Check 
+              type="checkbox" 
+              label={<span>I agree to the <Link to="/terms" target="_blank">Terms and Conditions</Link></span>}
+              checked={formData.agreeToTerms}
+              onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
+              required
+            />
           </Form.Group>
 
           <Button variant="primary" type="submit" className="w-100" disabled={loading}>

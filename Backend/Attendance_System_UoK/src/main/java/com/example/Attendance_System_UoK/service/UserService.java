@@ -80,4 +80,35 @@ public class UserService {
                 user.getFaculty(),
                 user instanceof Student ? ((Student) user).getArchivedCourseIds() : null);
     }
+
+    public java.util.Optional<User> findUserByEmail(String email) {
+        java.util.Optional<Student> student = studentRepository.findByEmail(email);
+        if (student.isPresent()) {
+            return java.util.Optional.of(student.get());
+        }
+
+        java.util.Optional<Teacher> teacher = teacherRepository.findByEmail(email);
+        if (teacher.isPresent()) {
+            return java.util.Optional.of(teacher.get());
+        }
+
+        java.util.Optional<Admin> admin = adminRepository.findByEmail(email);
+        if (admin.isPresent()) {
+            return java.util.Optional.of(admin.get());
+        }
+
+        return java.util.Optional.empty();
+    }
+
+    public void saveUser(User user) {
+        if (user instanceof Student) {
+            studentRepository.save((Student) user);
+        } else if (user instanceof Teacher) {
+            teacherRepository.save((Teacher) user);
+        } else if (user instanceof Admin) {
+            adminRepository.save((Admin) user);
+        } else {
+            throw new RuntimeException("Unknown user type");
+        }
+    }
 }
