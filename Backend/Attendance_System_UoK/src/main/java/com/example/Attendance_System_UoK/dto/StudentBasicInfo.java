@@ -17,4 +17,8 @@ public class StudentBasicInfo {
 
     // New validation field
     private String status; // PRESENT, FRAUD, IN_PROGRESS
+
+    // Additional info for reports
+    private String faculty;
+    private String degreeProgram;
 }

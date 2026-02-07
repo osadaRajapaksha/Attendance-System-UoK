@@ -27,5 +27,11 @@ public interface CourseService {
 
     Course createCourseForAdmin(CreateCourseDTO dto, String teacherId);
 
+    Course updateCourse(String courseId, CreateCourseDTO dto);
+
+    java.io.ByteArrayInputStream generateEnrolledStudentsReport(String courseId);
+
+    java.io.ByteArrayInputStream generateSessionWiseAttendanceReport(String courseId);
+
     void toggleArchiveStatus(String courseId, boolean status);
 }

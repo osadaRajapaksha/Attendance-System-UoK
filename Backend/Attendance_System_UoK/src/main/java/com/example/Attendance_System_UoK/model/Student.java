@@ -16,4 +16,6 @@ public class Student extends User {
     private String degreeProgram;
 
     private List<String> courseIds = new ArrayList<>();
+
+    private List<String> archivedCourseIds = new ArrayList<>();
 }

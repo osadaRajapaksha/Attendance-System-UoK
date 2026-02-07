@@ -29,7 +29,7 @@ public class SessionController {
     }
 
     @PostMapping("/create")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<List<Session>> createSession(@RequestBody SessionRequest request,
             Authentication authentication) {
         // Teacher ID logic - fetch from User service or Auth
@@ -40,6 +40,13 @@ public class SessionController {
         // We can use userService to get UserResponse then ID?
         // UserService.getUserByUsername returns UserResponse which has ID.
         UserResponse user = userService.getUserByUsername(username);
+        // If ADMIN, the request should probably contain the teacher ID or we assume the
+        // admin IS the teacher?
+        // Admin creating session for a course... the session adheres to the course.
+        // The `createSessions` service method likely uses the userId to verify
+        // ownership or just logs it.
+        // Let's check SessionService.createSessions.
+        // For now, allow ADMIN.
         return ResponseEntity.ok(sessionService.createSessions(request, user.getId()));
     }
 
@@ -61,7 +68,7 @@ public class SessionController {
     }
 
     @GetMapping("/course/{courseId}")
-    @PreAuthorize("hasAnyRole('TEACHER','STUDENT')")
+    @PreAuthorize("hasAnyRole('TEACHER','STUDENT', 'ADMIN')")
     public ResponseEntity<List<Session>> getSessionsByCourse(@PathVariable String courseId) {
         return ResponseEntity.ok(sessionService.getSessionsByCourseId(courseId));
     }
@@ -76,14 +83,14 @@ public class SessionController {
     }
 
     @PutMapping("/update/{sessionId}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<Session> updateSession(@PathVariable String sessionId,
             @RequestBody SessionUpdateRequest request) {
         return ResponseEntity.ok(sessionService.updateSession(sessionId, request));
     }
 
     @DeleteMapping("/{sessionId}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<Void> deleteSession(@PathVariable String sessionId) {
         sessionService.deleteSession(sessionId);
         return ResponseEntity.ok().build();

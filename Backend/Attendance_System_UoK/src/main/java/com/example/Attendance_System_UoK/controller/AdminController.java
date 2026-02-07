@@ -53,4 +53,13 @@ public class AdminController {
             @RequestParam(required = false) String degree) {
         return ResponseEntity.ok(adminService.searchStudents(query, faculty, degree));
     }
+
+    @PostMapping("/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> resetPassword(@RequestBody java.util.Map<String, String> payload) {
+        String userId = payload.get("userId");
+        String newPassword = payload.get("newPassword");
+        adminService.resetPassword(userId, newPassword);
+        return ResponseEntity.ok().build();
+    }
 }

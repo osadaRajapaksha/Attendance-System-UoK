@@ -65,6 +65,45 @@ public class AdminService {
         }
     }
 
+    public void resetPassword(String userId, String newPassword) {
+        String encodedPassword = passwordEncoder.encode(newPassword);
+
+        // Check Student
+        java.util.Optional<com.example.Attendance_System_UoK.model.Student> studentOpt = studentRepository
+                .findById(userId);
+        if (studentOpt.isPresent()) {
+            com.example.Attendance_System_UoK.model.Student student = studentOpt.get();
+            student.setPassword(encodedPassword);
+            studentRepository.save(student);
+            return;
+        }
+
+        // Check Teacher
+        java.util.Optional<com.example.Attendance_System_UoK.model.Teacher> teacherOpt = teacherRepository
+                .findById(userId);
+        if (teacherOpt.isPresent()) {
+            com.example.Attendance_System_UoK.model.Teacher teacher = teacherOpt.get();
+            teacher.setPassword(encodedPassword);
+            teacherRepository.save(teacher);
+            return;
+        }
+
+        // Check Admin
+        java.util.Optional<com.example.Attendance_System_UoK.model.Admin> adminOpt = adminRepository.findById(userId);
+        if (adminOpt.isPresent()) {
+            com.example.Attendance_System_UoK.model.Admin admin = adminOpt.get();
+            admin.setPassword(encodedPassword);
+            adminRepository.save(admin);
+            return;
+        }
+
+        // Fallback to strict User repo (though likely not used if separate collections)
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPassword(encodedPassword);
+        userRepository.save(user);
+    }
+
     public List<UserResponse> searchStudents(String query, String faculty, String degreeProgram) {
         String searchQuery = query == null ? "" : query;
         String searchFaculty = (faculty == null || faculty.isEmpty() || faculty.equals("All")) ? "" : faculty;
@@ -107,21 +146,28 @@ public class AdminService {
     }
 
     private UserResponse mapToUserResponse(User user) {
-        UserResponse response = new UserResponse();
-        response.setId(user.getId());
-        response.setUsername(user.getUsername());
-        response.setEmail(user.getEmail());
-        response.setRole(user.getRole());
-        response.setFullName(user.getFullName());
-
-        if (user instanceof com.example.Attendance_System_UoK.model.Student) {
-            com.example.Attendance_System_UoK.model.Student student = (com.example.Attendance_System_UoK.model.Student) user;
-            response.setStudentId(student.getStudentId());
-            response.setDepartment(student.getDepartment());
-            response.setFaculty(student.getFaculty());
-            response.setDegreeProgram(student.getDegreeProgram());
-        }
-
-        return response;
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                user.getFullName(),
+                user instanceof com.example.Attendance_System_UoK.model.Teacher
+                        ? ((com.example.Attendance_System_UoK.model.Teacher) user).getTeacherId()
+                        : null,
+                user instanceof com.example.Attendance_System_UoK.model.Teacher
+                        ? ((com.example.Attendance_System_UoK.model.Teacher) user).getPosition()
+                        : null,
+                user instanceof com.example.Attendance_System_UoK.model.Student
+                        ? ((com.example.Attendance_System_UoK.model.Student) user).getStudentId()
+                        : null,
+                user.getDepartment(),
+                user instanceof com.example.Attendance_System_UoK.model.Student
+                        ? ((com.example.Attendance_System_UoK.model.Student) user).getDegreeProgram()
+                        : null,
+                user.getFaculty(),
+                user instanceof com.example.Attendance_System_UoK.model.Student
+                        ? ((com.example.Attendance_System_UoK.model.Student) user).getArchivedCourseIds()
+                        : null);
     }
 }

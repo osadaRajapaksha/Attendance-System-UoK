@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Container, Tabs, Tab, Button, Alert, Spinner, Badge, Card, Row, Col, Modal, Form } from 'react-bootstrap';
+import { Container, Tabs, Tab, Button, Alert, Spinner, Badge, Card, Row, Col, Modal, Form, Dropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
@@ -11,6 +11,7 @@ interface Course {
   teacherId: string;
   teacherName: string;
   hasEnrollmentKey: boolean;
+  isArchived?: boolean;
 }
 
 const StudentDashboard: React.FC = () => {
@@ -21,6 +22,8 @@ const StudentDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchCourses = async () => {
     try {
@@ -117,6 +120,34 @@ const StudentDashboard: React.FC = () => {
 
   const isEnrolled = (courseId: string) => enrolledCourseIds.includes(courseId);
 
+  const handleArchiveCourse = async (courseId: string) => {
+      try {
+          await api.put(`/api/students/courses/${courseId}/archive`);
+          // Update local state
+          setCourses(courses.map(c => {
+              if (c.id === courseId) return { ...c, isArchived: true };
+              return c;
+          }));
+      } catch (err) {
+          console.error(err);
+          alert("Failed to archive course");
+      }
+  };
+
+  const handleUnarchiveCourse = async (courseId: string) => {
+      try {
+          await api.put(`/api/students/courses/${courseId}/unarchive`);
+          // Update local state
+          setCourses(courses.map(c => {
+              if (c.id === courseId) return { ...c, isArchived: false };
+              return c;
+          }));
+      } catch (err) {
+          console.error(err);
+          alert("Failed to unarchive course");
+      }
+  };
+
   const CourseCard = ({ course }: { course: Course }) => {
     const enrolled = isEnrolled(course.id);
     return (
@@ -125,7 +156,23 @@ const StudentDashboard: React.FC = () => {
           <Card.Body className="d-flex flex-column">
             <div className="d-flex justify-content-between align-items-start mb-2">
               <Badge bg="info" className="p-2">{course.code}</Badge>
-              {enrolled ? <Badge bg="success">Enrolled</Badge> : <Badge bg="secondary">Not Enrolled</Badge>}
+              <div className="d-flex align-items-center gap-2">
+                  {enrolled ? <Badge bg="success">Enrolled</Badge> : <Badge bg="secondary">Not Enrolled</Badge>}
+                  {enrolled && (
+                      <Dropdown align="end">
+                          <Dropdown.Toggle variant="link" bsPrefix="p-0" style={{ color: 'black', textDecoration: 'none' }}>
+                              <i className="bi bi-three-dots-vertical" style={{ color: 'black' }}></i>
+                          </Dropdown.Toggle>
+                          <Dropdown.Menu>
+                              {!course.isArchived ? (
+                                  <Dropdown.Item onClick={() => handleArchiveCourse(course.id)}>Archive</Dropdown.Item>
+                              ) : (
+                                  <Dropdown.Item onClick={() => handleUnarchiveCourse(course.id)}>Unarchive</Dropdown.Item>
+                              )}
+                          </Dropdown.Menu>
+                      </Dropdown>
+                  )}
+              </div>
             </div>
             <Card.Title className="mt-2 text-truncate" title={course.name}>{course.name}</Card.Title>
             <Card.Subtitle className="mb-3 text-muted small">
@@ -165,23 +212,54 @@ const StudentDashboard: React.FC = () => {
       ) : (
         <Tabs defaultActiveKey="all_courses" id="student-tabs" className="mb-3 justify-content-center">
           <Tab eventKey="all_courses" title="All Courses">
+            <Form.Group className="mb-3 mt-3 w-50 mx-auto">
+                 <Form.Control
+                    type="text"
+                    placeholder="Search by Course Code or Name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                 />
+            </Form.Group>
             <Row className="g-4 mt-2">
-              {courses.map(course => (
+              {courses.filter(c => 
+                  c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  c.code.toLowerCase().includes(searchQuery.toLowerCase())
+              ).map(course => (
                 <CourseCard key={course.id} course={course} />
               ))}
+              {courses.filter(c => 
+                  c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  c.code.toLowerCase().includes(searchQuery.toLowerCase())
+              ).length === 0 && <p className="text-center text-muted">No courses found matching your search.</p>}
             </Row>
           </Tab>
           <Tab eventKey="my_courses" title="My Courses">
-             <Row className="g-4 mt-2">
-              {courses.filter(c => isEnrolled(c.id)).map(course => (
-                <CourseCard key={course.id} course={course} />
-              ))}
-              {courses.filter(c => isEnrolled(c.id)).length === 0 && (
-                 <Col xs={12} className="text-center mt-5">
-                    <p className="text-muted fs-5">You have not enrolled in any courses yet.</p>
-                 </Col>
-              )}
-            </Row>
+             <Tabs defaultActiveKey="active" className="mb-3 mt-3">
+                 <Tab eventKey="active" title="Active">
+                     <Row className="g-4 mt-2">
+                      {courses.filter(c => isEnrolled(c.id) && !c.isArchived).map(course => (
+                        <CourseCard key={course.id} course={course} />
+                      ))}
+                      {courses.filter(c => isEnrolled(c.id) && !c.isArchived).length === 0 && (
+                         <Col xs={12} className="text-center mt-5">
+                            <p className="text-muted fs-5">No active enrolled courses.</p>
+                         </Col>
+                      )}
+                    </Row>
+                 </Tab>
+                 <Tab eventKey="archived" title="Archived">
+                     <Row className="g-4 mt-2">
+                      {courses.filter(c => isEnrolled(c.id) && c.isArchived).map(course => (
+                        <CourseCard key={course.id} course={course} />
+                      ))}
+                      {courses.filter(c => isEnrolled(c.id) && c.isArchived).length === 0 && (
+                         <Col xs={12} className="text-center mt-5">
+                            <p className="text-muted fs-5">No archived courses.</p>
+                         </Col>
+                      )}
+                    </Row>
+                 </Tab>
+             </Tabs>
           </Tab>
           <Tab eventKey="account" title="Account">
             <Row className="justify-content-center mt-4">

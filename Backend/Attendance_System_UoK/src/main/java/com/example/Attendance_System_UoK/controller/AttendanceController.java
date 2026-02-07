@@ -25,7 +25,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/session/{sessionId}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<List<StudentBasicInfo>> getSessionAttendance(@PathVariable String sessionId) {
         return ResponseEntity.ok(attendanceService.getAttendanceBySessionId(sessionId));
     }
@@ -48,7 +48,7 @@ public class AttendanceController {
     }
 
     @PostMapping("/manual-mark")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<String> manualMark(
             @RequestBody com.example.Attendance_System_UoK.dto.ManualMarkRequest request) {
         attendanceService.manualMarkAttendance(request.getSessionId(), request.getStudentId(), request.getNote());
@@ -56,7 +56,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/course/{courseId}/report")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<List<com.example.Attendance_System_UoK.dto.CourseAttendanceReportDTO>> getCourseAttendanceReport(
             @PathVariable String courseId) {
         return ResponseEntity.ok(attendanceService.getCourseAttendanceReport(courseId));

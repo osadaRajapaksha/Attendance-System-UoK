@@ -47,7 +47,7 @@ function App() {
           <Route path="/student/course/:courseId" element={<StudentCourseDetails />} />
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['ROLE_TEACHER']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['ROLE_TEACHER', 'ROLE_ADMIN']} />}>
           <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/course/:courseId" element={<TeacherCourseDetails />} />
           <Route path="/teacher/course/:courseId/create-session" element={<TeacherSessionCreate />} />

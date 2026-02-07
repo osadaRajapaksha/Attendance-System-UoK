@@ -154,4 +154,38 @@ public class CourseController {
     public void unarchiveCourse(@PathVariable String id) {
         courseService.toggleArchiveStatus(id, false);
     }
+
+    @PutMapping("/update/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public Course updateCourse(@PathVariable String id, @RequestBody CreateCourseDTO dto) {
+        return courseService.updateCourse(id, dto);
+    }
+
+    @GetMapping("/{id}/export/attendance")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> exportAttendance(
+            @PathVariable String id) {
+        String filename = "attendance_matrix.xlsx";
+        org.springframework.core.io.InputStreamResource file = new org.springframework.core.io.InputStreamResource(
+                courseService.generateSessionWiseAttendanceReport(id));
+
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.ms-excel"))
+                .body(file);
+    }
+
+    @GetMapping("/{id}/export/students")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> exportStudents(
+            @PathVariable String id) {
+        String filename = "enrolled_students.xlsx";
+        org.springframework.core.io.InputStreamResource file = new org.springframework.core.io.InputStreamResource(
+                courseService.generateEnrolledStudentsReport(id));
+
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.ms-excel"))
+                .body(file);
+    }
 }

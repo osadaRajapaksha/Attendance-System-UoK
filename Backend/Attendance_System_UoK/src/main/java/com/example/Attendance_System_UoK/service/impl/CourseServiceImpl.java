@@ -30,6 +30,14 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
+    private final com.example.Attendance_System_UoK.service.ExcelExportService excelExportService;
+    private final com.example.Attendance_System_UoK.service.AttendanceService attendanceService;
+    private final com.example.Attendance_System_UoK.repository.SessionRepository sessionRepository;
+    private final MongoTemplate mongoTemplate;
+    // Fields for services are added below, but for Lombok's @AllArgsConstructor to
+    // work, they must be final and declared here.
+    // However, we are declaring them at the bottom in the previous edit.
+    // To be safe, we should declare them ALL at the top.
 
     @Override
     public List<CourseBasicResponse> getAllCourses() {
@@ -75,8 +83,6 @@ public class CourseServiceImpl implements CourseService {
 
         return courseRepository.save(c);
     }
-
-    private MongoTemplate mongoTemplate;
 
     @Override
     public Course enrollStudent(String courseId, String studentId, String enrollmentKey) {
@@ -181,8 +187,15 @@ public class CourseServiceImpl implements CourseService {
             return List.of();
         }
         return studentRepository.findAllById(studentIds).stream()
-                .map(s -> new com.example.Attendance_System_UoK.dto.StudentBasicInfo(s.getId(), s.getFullName(),
-                        s.getStudentId(), null, null, null))
+                .map(s -> new com.example.Attendance_System_UoK.dto.StudentBasicInfo(
+                        s.getId(),
+                        s.getFullName(),
+                        s.getStudentId(),
+                        null,
+                        null,
+                        null,
+                        s.getFaculty(),
+                        s.getDegreeProgram()))
                 .collect(Collectors.toList());
     }
 
@@ -218,5 +231,45 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         course.setArchived(status);
         courseRepository.save(course);
+    }
+
+    @Override
+    public Course updateCourse(String courseId, CreateCourseDTO dto) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        if (dto.getName() != null)
+            course.setName(dto.getName());
+        if (dto.getCode() != null)
+            course.setCode(dto.getCode());
+        if (dto.getEnrollmentKey() != null)
+            course.setEnrollmentKey(dto.getEnrollmentKey());
+
+        // Allow updating teacher logic if needed, but usually strictly controlled.
+        // For 'Manage Courses' admin panel, maybe we allow it?
+        // Let's keep it simple for now as requested.
+
+        return courseRepository.save(course);
+    }
+
+    @Override
+    public java.io.ByteArrayInputStream generateEnrolledStudentsReport(String courseId) {
+        Course course = getCourseById(courseId);
+        List<com.example.Attendance_System_UoK.dto.StudentBasicInfo> students = getEnrolledStudents(courseId);
+        return excelExportService.generateEnrolledStudentsReport(course.getName(), students);
+    }
+
+    @Override
+    public java.io.ByteArrayInputStream generateSessionWiseAttendanceReport(String courseId) {
+        Course course = getCourseById(courseId);
+
+        // 1. Get Gradebook Data
+        List<com.example.Attendance_System_UoK.dto.CourseAttendanceReportDTO> reportData = attendanceService
+                .getCourseAttendanceReport(courseId);
+
+        // 2. Get Sessions for Headers
+        List<com.example.Attendance_System_UoK.model.Session> sessions = sessionRepository.findByCourseId(courseId);
+
+        return excelExportService.generateSessionWiseAttendanceReport(course.getName(), reportData, sessions);
     }
 }

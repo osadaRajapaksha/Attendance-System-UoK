@@ -72,8 +72,12 @@ public class UserService {
                 user.getEmail(),
                 user.getRole(),
                 user.getFullName(),
+                user instanceof Teacher ? ((Teacher) user).getTeacherId() : null,
+                user instanceof Teacher ? ((Teacher) user).getPosition() : null,
                 user instanceof Student ? ((Student) user).getStudentId() : null,
+                user.getDepartment(),
                 user instanceof Student ? ((Student) user).getDegreeProgram() : null,
-                user.getFaculty());
+                user.getFaculty(),
+                user instanceof Student ? ((Student) user).getArchivedCourseIds() : null);
     }
 }

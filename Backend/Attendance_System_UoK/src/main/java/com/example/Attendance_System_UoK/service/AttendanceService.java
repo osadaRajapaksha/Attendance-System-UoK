@@ -43,10 +43,11 @@ public class AttendanceService {
                 }
 
                 return new StudentBasicInfo(student.getId(), student.getFullName(), student.getStudentId(),
-                        att.getMarkedAt(), deviceMismatchInfo, att.getStatus());
+                        att.getMarkedAt(), deviceMismatchInfo, att.getStatus(), student.getFaculty(),
+                        student.getDegreeProgram());
             }
             return new StudentBasicInfo(att.getStudentId(), "Unknown", "Unknown", att.getMarkedAt(), null,
-                    att.getStatus());
+                    att.getStatus(), null, null);
         }).collect(Collectors.toList());
     }
 
