@@ -99,6 +99,18 @@ public class AuthServiceImpl implements AuthService {
         } else if (user instanceof Teacher) {
             teacherRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
         } else if (user instanceof Admin) {
+            // ADMIN 2FA LOGIC
+            // If OTP is NOT provided, generate and send it
+            if (request.getOtp() == null || request.getOtp().isEmpty()) {
+                otpService.generateAndSendOtp(user.getEmail());
+                return new AuthResponse(true, "OTP required");
+            }
+
+            // If OTP IS provided, validate it
+            if (!otpService.validateOtp(user.getEmail(), request.getOtp())) {
+                throw new RuntimeException("Invalid or expired OTP");
+            }
+
             adminRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
         }
 

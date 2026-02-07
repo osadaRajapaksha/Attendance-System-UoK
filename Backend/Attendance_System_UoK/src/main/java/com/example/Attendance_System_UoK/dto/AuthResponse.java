@@ -28,6 +28,10 @@ public class AuthResponse {
     private String degreeProgram;
     private String faculty;
 
+    // 2FA
+    private boolean requiresTwoFactor;
+
+    // Standard Constructor
     public AuthResponse(String token, String deviceToken, String email, String fullName, Role role, String studentId,
             String degreeProgram,
             String faculty) {
@@ -39,5 +43,13 @@ public class AuthResponse {
         this.studentId = studentId;
         this.degreeProgram = degreeProgram;
         this.faculty = faculty;
+        this.requiresTwoFactor = false;
+    }
+
+    // 2FA Constructor
+    public AuthResponse(boolean requiresTwoFactor, String message) {
+        this.requiresTwoFactor = requiresTwoFactor;
+        // We can reuse other fields or just leave them null/empty for this specific
+        // response case
     }
 }

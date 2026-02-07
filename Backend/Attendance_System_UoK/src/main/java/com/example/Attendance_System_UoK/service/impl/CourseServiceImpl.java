@@ -189,6 +189,25 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    public CourseBasicResponse getCourseDetails(String courseId) {
+        Course course = getCourseById(courseId);
+        String teacherName = "Unknown Teacher";
+        if (course.getTeacherId() != null) {
+            teacherName = teacherRepository.findById(course.getTeacherId())
+                    .map(Teacher::getFullName)
+                    .orElse("Unknown Teacher");
+        }
+        return new CourseBasicResponse(
+                course.getId(),
+                course.getName(),
+                course.getCode(),
+                teacherName,
+                course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty(),
+                course.getAcademicYear(),
+                course.getSemester());
+    }
+
+    @Override
     public List<com.example.Attendance_System_UoK.dto.StudentBasicInfo> getEnrolledStudents(String courseId) {
         Course course = getCourseById(courseId);
         List<String> studentIds = course.getStudentIds();

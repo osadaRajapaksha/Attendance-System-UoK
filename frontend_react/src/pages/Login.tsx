@@ -21,13 +21,28 @@ const Login: React.FC = () => {
     }
   }, [auth, navigate]);
 
+  const [otp, setOtp] = useState('');
+  const [showOtp, setShowOtp] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const response = await api.post('/api/auth/login', { email, password });
-      const { token, deviceToken, role, fullName, studentId, teacherId, adminId, degreeProgram, faculty } = response.data;
+      const payload: any = { email, password };
+      if (showOtp) payload.otp = otp;
+
+      const response = await api.post('/api/auth/login', payload);
+      const data = response.data;
+      
+      // Check if 2FA is required
+      if (data.requiresTwoFactor) {
+          setShowOtp(true);
+          setLoading(false);
+          return;
+      }
+
+      const { token, deviceToken, role, fullName, studentId, teacherId, adminId, degreeProgram, faculty } = data;
       
       // Device Lock Anti-Fraud
       const existingDeviceToken = localStorage.getItem('device_token');
@@ -53,10 +68,15 @@ const Login: React.FC = () => {
       else navigate('/');
       
     } catch (err: any) {
-      setError('Invalid email or password');
       console.error(err);
+      if (err.response && err.response.data && err.response.data.message) {
+          setError(err.response.data.message);
+      } else {
+          setError('Invalid email or password');
+      }
     } finally {
-      setLoading(false);
+      if (!showOtp) setLoading(false); // Only stop loading if not switching to OTP mode
+      else setLoading(false);
     }
   };
 
@@ -85,8 +105,25 @@ const Login: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required 
+              disabled={showOtp}
             />
           </Form.Group>
+
+          {showOtp && (
+              <Form.Group className="mb-3" controlId="formBasicOtp">
+                <Form.Label>One-Time Password (OTP)</Form.Label>
+                <Form.Control 
+                  type="text" 
+                  placeholder="Enter OTP sent to your email" 
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  required 
+                />
+                <Form.Text className="text-muted">
+                    Check your email for the 6-digit code.
+                </Form.Text>
+              </Form.Group>
+          )}
           <Button variant="primary" type="submit" className="w-100" disabled={loading}>
             {loading ? <Spinner animation="border" size="sm" /> : 'Login'}
           </Button>

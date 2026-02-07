@@ -47,8 +47,8 @@ public class CourseController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'STUDENT')")
-    public Course getCourseById(@PathVariable String id) {
-        return courseService.getCourseById(id);
+    public CourseBasicResponse getCourseById(@PathVariable String id) {
+        return courseService.getCourseDetails(id);
     }
 
     // Enroll student (can be done by student or admin or teacher)

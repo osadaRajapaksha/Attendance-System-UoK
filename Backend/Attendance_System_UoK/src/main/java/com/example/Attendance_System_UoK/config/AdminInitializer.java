@@ -15,7 +15,7 @@ public class AdminInitializer {
     public CommandLineRunner initAdmin(AdminRepository adminRepository, PasswordEncoder passwordEncoder) {
         return args -> {
 
-            String adminEmail = "admin@kln.ac.lk";
+            String adminEmail = "attendanceuoksystem@gmail.com";
 
             // Check if admin already exists
             if (adminRepository.findByEmail(adminEmail).isPresent()) {
