@@ -250,9 +250,9 @@ public class SessionService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
 
-        if (session.getStatus() != SessionStatus.SCHEDULED) {
+        if (session.getStatus() != SessionStatus.SCHEDULED && session.getStatus() != SessionStatus.EXPIRED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Cannot delete session. Only SCHEDULED sessions can be deleted. Current status: "
+                    "Cannot delete session. Only SCHEDULED or EXPIRED sessions can be deleted. Current status: "
                             + session.getStatus());
         }
 

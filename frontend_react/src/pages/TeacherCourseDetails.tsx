@@ -194,7 +194,7 @@ const TeacherCourseDetails: React.FC = () => {
             fetchCourseDetails(); // Refresh
         } catch (err) {
             console.error(err);
-            alert("Failed to delete session. Ensure it is SCHEDULED.");
+            alert("Failed to delete session. Ensure it is SCHEDULED or EXPIRED.");
         }
     };
 
@@ -364,7 +364,7 @@ const TeacherCourseDetails: React.FC = () => {
                                                                     </Card.Subtitle>
                                                                 </div>
                                                                 
-                                                                <div className="d-flex gap-2">
+                                                                    <div className="d-flex gap-2">
                                                                     {status !== 'EXPIRED' && status !== 'DELETED' && (
                                                                         <Button 
                                                                             variant="link" 
@@ -375,7 +375,7 @@ const TeacherCourseDetails: React.FC = () => {
                                                                             <i className="bi bi-pencil-square"></i> Edit
                                                                         </Button>
                                                                     )}
-                                                                    {status === 'SCHEDULED' && (
+                                                                    {(status === 'SCHEDULED' || status === 'EXPIRED') && (
                                                                         <Button 
                                                                             variant="link" 
                                                                             size="sm" 
