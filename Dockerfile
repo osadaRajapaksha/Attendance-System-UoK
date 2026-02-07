@@ -17,25 +17,25 @@ RUN npm run build
 FROM maven:3.9.6-eclipse-temurin-17 AS build-backend
 WORKDIR /app/backend
 
-# Copy Maven config first
-COPY Backend/pom.xml ./
+# Copy pom.xml from the CORRECT location
+COPY Backend/Attendance_System_UoK/pom.xml ./
 RUN mvn dependency:go-offline
 
 # Copy backend source
-COPY Backend/ ./
+COPY Backend/Attendance_System_UoK/ ./
 RUN mvn clean package -DskipTests
 
 
 # ------------------------
-# Stage 3: Run application
+# Stage 3: Runtime
 # ------------------------
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-# Copy backend jar
+# Copy Spring Boot jar
 COPY --from=build-backend /app/backend/target/*.jar app.jar
 
-# Copy frontend build into Spring Boot static folder
+# Copy React build into Spring Boot static folder
 COPY --from=build-frontend /app/frontend/build ./static
 
 EXPOSE 8080
