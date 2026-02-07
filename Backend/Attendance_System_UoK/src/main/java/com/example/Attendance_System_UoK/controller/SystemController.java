@@ -30,4 +30,27 @@ public class SystemController {
         service.updateSystemTimezone(zoneId);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/general")
+    public ResponseEntity<Map<String, Object>> getGeneralSettings() {
+        return ResponseEntity.ok(Map.of(
+                "academicYear", service.getAcademicYear(),
+                "semester", service.getSemester(),
+                "attendanceThreshold", service.getAttendanceThreshold(),
+                "sessionDuration", service.getSessionDuration()));
+    }
+
+    @PostMapping("/general")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> updateGeneralSettings(@RequestBody Map<String, Object> body) {
+        if (body.containsKey("academicYear"))
+            service.updateAcademicYear((String) body.get("academicYear"));
+        if (body.containsKey("semester"))
+            service.updateSemester((String) body.get("semester"));
+        if (body.containsKey("attendanceThreshold"))
+            service.updateAttendanceThreshold(Integer.parseInt(body.get("attendanceThreshold").toString()));
+        if (body.containsKey("sessionDuration"))
+            service.updateSessionDuration(Integer.parseInt(body.get("sessionDuration").toString()));
+        return ResponseEntity.ok().build();
+    }
 }

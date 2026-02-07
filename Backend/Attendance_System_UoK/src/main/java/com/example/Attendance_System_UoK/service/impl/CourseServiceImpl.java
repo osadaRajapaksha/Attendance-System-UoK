@@ -34,6 +34,7 @@ public class CourseServiceImpl implements CourseService {
     private final com.example.Attendance_System_UoK.service.AttendanceService attendanceService;
     private final com.example.Attendance_System_UoK.repository.SessionRepository sessionRepository;
     private final MongoTemplate mongoTemplate;
+    private final com.example.Attendance_System_UoK.service.SystemSettingService systemSettingService;
     // Fields for services are added below, but for Lombok's @AllArgsConstructor to
     // work, they must be final and declared here.
     // However, we are declaring them at the bottom in the previous edit.
@@ -55,7 +56,9 @@ public class CourseServiceImpl implements CourseService {
                             course.getName(),
                             course.getCode(),
                             teacherName,
-                            course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty());
+                            course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty(),
+                            course.getAcademicYear(),
+                            course.getSemester());
                 })
                 .collect(Collectors.toList());
     }
@@ -77,6 +80,10 @@ public class CourseServiceImpl implements CourseService {
         c.setTeacherId(teacher.getId());
         c.setEnrollmentKey(dto.getEnrollmentKey());
 
+        // Auto-populate from System Settings
+        c.setAcademicYear(systemSettingService.getAcademicYear());
+        c.setSemester(systemSettingService.getSemester());
+
         // Set empty student list if null
         c.setStudentIds(
                 c.getStudentIds() == null ? List.of() : c.getStudentIds());
@@ -94,7 +101,7 @@ public class CourseServiceImpl implements CourseService {
         // Check Enrollment Key
         if (course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty()) {
             if (enrollmentKey == null || !enrollmentKey.equals(course.getEnrollmentKey())) {
-                throw new RuntimeException("Invalid Enrollment Key");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Enrollment Key");
             }
         }
 
@@ -168,7 +175,9 @@ public class CourseServiceImpl implements CourseService {
                             course.getName(),
                             course.getCode(),
                             teacherName,
-                            course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty());
+                            course.getEnrollmentKey() != null && !course.getEnrollmentKey().isEmpty(),
+                            course.getAcademicYear(),
+                            course.getSemester());
                 })
                 .collect(Collectors.toList());
     }
@@ -220,6 +229,11 @@ public class CourseServiceImpl implements CourseService {
         c.setCode(dto.getCode());
         c.setTeacherId(teacher.getId());
         c.setEnrollmentKey(dto.getEnrollmentKey());
+
+        // Auto-populate from System Settings
+        c.setAcademicYear(systemSettingService.getAcademicYear());
+        c.setSemester(systemSettingService.getSemester());
+
         c.setStudentIds(List.of());
 
         return courseRepository.save(c);

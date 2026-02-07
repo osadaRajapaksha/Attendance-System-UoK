@@ -12,4 +12,6 @@ public class CourseBasicResponse {
     private String code;
     private String teacherName;
     private boolean hasEnrollmentKey;
+    private String academicYear;
+    private String semester;
 }

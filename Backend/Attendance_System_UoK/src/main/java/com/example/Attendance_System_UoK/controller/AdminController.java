@@ -54,6 +54,12 @@ public class AdminController {
         return ResponseEntity.ok(adminService.searchStudents(query, faculty, degree));
     }
 
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<java.util.Map<String, Long>> getDashboardStats() {
+        return ResponseEntity.ok(adminService.getDashboardStats());
+    }
+
     @PostMapping("/reset-password")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> resetPassword(@RequestBody java.util.Map<String, String> payload) {

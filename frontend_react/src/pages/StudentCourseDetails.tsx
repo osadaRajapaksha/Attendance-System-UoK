@@ -70,6 +70,9 @@ const StudentCourseDetails: React.FC = () => {
     const [msg, setMsg] = useState('');
     const [showUnenrollModal, setShowUnenrollModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    
+    // System Settings
+    const [attendanceThreshold, setAttendanceThreshold] = useState(80);
 
     // History Modal State
     const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -89,6 +92,11 @@ const StudentCourseDetails: React.FC = () => {
     const fetchData = async () => {
         setLoading(prev => sessions.length === 0);
         try {
+            // Fetch System Settings
+            api.get('/api/system/general').then(res => {
+                if (res.data.attendanceThreshold) setAttendanceThreshold(res.data.attendanceThreshold);
+            }).catch(console.error);
+
             if (!course) {
                 const courseRes = await api.get(`/api/courses/${courseId}`);
                 setCourse(courseRes.data);
@@ -230,7 +238,15 @@ const StudentCourseDetails: React.FC = () => {
                     <Row className="g-3">
                         {/* Percentage Card */}
                         <Col md={3}>
-                            <Card className="h-100 text-center shadow-sm border-0 bg-primary text-white">
+                            <Card className={`h-100 text-center shadow-sm border-0 text-white ${
+                                (() => {
+                                    const pastSessions = sessions.filter(s => s.status === 'EXPIRED');
+                                    const presentCount = pastSessions.filter(s => markedSessionIds.includes(s.id)).length;
+                                    const total = pastSessions.length;
+                                    const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+                                    return rate < attendanceThreshold ? 'bg-danger' : 'bg-primary';
+                                })()
+                            }`}>
                                 <Card.Body className="d-flex flex-column justify-content-center align-items-center">
                                     <h6 className="opacity-75">Attendance Rate</h6>
                                     <h1 className="display-4 fw-bold mb-0">
@@ -241,6 +257,16 @@ const StudentCourseDetails: React.FC = () => {
                                             return total > 0 ? Math.round((presentCount / total) * 100) : 0;
                                         })()}%
                                     </h1>
+                                    {(() => {
+                                         const pastSessions = sessions.filter(s => s.status === 'EXPIRED');
+                                         const presentCount = pastSessions.filter(s => markedSessionIds.includes(s.id)).length;
+                                         const total = pastSessions.length;
+                                         const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+                                         if (rate < attendanceThreshold) {
+                                             return <small className="mt-2 fw-bold"><i className="bi bi-exclamation-triangle-fill"></i> Below Threshold ({attendanceThreshold}%)</small>;
+                                         }
+                                         return null;
+                                    })()}
                                 </Card.Body>
                             </Card>
                         </Col>

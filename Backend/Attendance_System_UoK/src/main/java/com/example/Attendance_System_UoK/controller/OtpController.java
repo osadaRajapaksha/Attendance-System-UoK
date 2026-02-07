@@ -32,13 +32,13 @@ public class OtpController {
 
         if (email == null || !MICROSOFT_DOMAIN_PATTERN.matcher(email).matches()) {
             return ResponseEntity.badRequest()
-                    .body("Invalid email domain. Only University emails are allowed.");
+                    .body(Map.of("message", "Invalid email domain. Only University emails are allowed."));
         }
 
         // Check if user exists for Forgot Password flow
         if (isForgotPassword) {
             if (userService.findUserByEmail(email).isEmpty()) {
-                return ResponseEntity.badRequest().body("No user found with this email address.");
+                return ResponseEntity.badRequest().body(Map.of("message", "No user found with this email address."));
             }
         }
 
@@ -47,7 +47,7 @@ public class OtpController {
             return ResponseEntity.ok().body(Map.of("message", "OTP sent successfully"));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Failed to send OTP");
+            return ResponseEntity.internalServerError().body(Map.of("message", "Failed to send OTP"));
         }
     }
 }

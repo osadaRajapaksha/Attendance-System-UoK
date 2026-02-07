@@ -30,6 +30,18 @@ const TeacherSessionCreate: React.FC = () => {
     const [scheduledDates, setScheduledDates] = useState<string[]>([]);
     const [boundary, setBoundary] = useState<{lat: number, lng: number}[]>([]);
 
+    // System Settings State
+    const [defaultDuration, setDefaultDuration] = useState(60);
+
+    // Fetch System Settings
+    React.useEffect(() => {
+        api.get('/api/system/general').then(res => {
+            if (res.data.sessionDuration) {
+                setDefaultDuration(res.data.sessionDuration);
+            }
+        }).catch(err => console.error("Failed to fetch system settings", err));
+    }, []);
+
     // Effect to calculate scheduled dates
     React.useEffect(() => {
         if (weekly && startTime && recurrenceStartDate && recurrenceEndDate) {
@@ -52,13 +64,22 @@ const TeacherSessionCreate: React.FC = () => {
         }
     }, [weekly, startTime, recurrenceStartDate, recurrenceEndDate]);
 
-    // Initialize recurrence start date when start time changes
+    // Initialize recurrence start date and default end time when start time changes
     React.useEffect(() => {
         if (startTime) {
              // For simplicity, default recurrence start is the session start date
              setRecurrenceStartDate(startTime.split('T')[0]);
+             
+             // Auto-set End Time based on default duration if not set
+             if (!endTime) {
+                 const start = new Date(startTime);
+                 const end = new Date(start.getTime() + defaultDuration * 60000);
+                 // Format for datetime-local: YYYY-MM-DDTHH:mm
+                 const endString = new Date(end.getTime() - (end.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                 setEndTime(endString);
+             }
         }
-    }, [startTime]);
+    }, [startTime, defaultDuration]);
     
     // Map Center State
     const [mapCenter, setMapCenter] = useState(defaultCenter);

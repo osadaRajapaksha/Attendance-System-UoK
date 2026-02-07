@@ -18,4 +18,5 @@ public interface TeacherRepository extends MongoRepository<Teacher, String> {
     @Update("{ '$set': { 'lastLogin': ?1 } }")
     void updateLastLogin(String username, LocalDateTime lastLogin);
 
+    long countByActive(boolean active);
 }

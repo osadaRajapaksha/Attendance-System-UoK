@@ -15,17 +15,20 @@ public class AdminService {
     private final com.example.Attendance_System_UoK.repository.StudentRepository studentRepository;
     private final com.example.Attendance_System_UoK.repository.TeacherRepository teacherRepository;
     private final com.example.Attendance_System_UoK.repository.AdminRepository adminRepository;
+    private final com.example.Attendance_System_UoK.repository.CourseRepository courseRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public AdminService(UserRepository userRepository,
             com.example.Attendance_System_UoK.repository.StudentRepository studentRepository,
             com.example.Attendance_System_UoK.repository.TeacherRepository teacherRepository,
             com.example.Attendance_System_UoK.repository.AdminRepository adminRepository,
+            com.example.Attendance_System_UoK.repository.CourseRepository courseRepository,
             org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.teacherRepository = teacherRepository;
         this.adminRepository = adminRepository;
+        this.courseRepository = courseRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -169,5 +172,16 @@ public class AdminService {
                 user instanceof com.example.Attendance_System_UoK.model.Student
                         ? ((com.example.Attendance_System_UoK.model.Student) user).getArchivedCourseIds()
                         : null);
+    }
+
+    public java.util.Map<String, Long> getDashboardStats() {
+        long studentCount = studentRepository.count();
+        long teacherCount = teacherRepository.countByActive(true);
+        long courseCount = courseRepository.count();
+
+        return java.util.Map.of(
+                "students", studentCount,
+                "teachers", teacherCount,
+                "courses", courseCount);
     }
 }

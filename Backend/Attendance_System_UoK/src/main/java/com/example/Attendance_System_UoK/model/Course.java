@@ -20,4 +20,7 @@ public class Course {
     private List<String> studentIds = new ArrayList<>(); // enrolled student ids
 
     private boolean isArchived = false;
+
+    private String academicYear;
+    private String semester;
 }

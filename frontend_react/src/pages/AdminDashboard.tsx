@@ -3,16 +3,33 @@ import { Container, Button, Form, Alert, Card, Tabs, Tab, Table, Badge, Row, Col
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import * as XLSX from 'xlsx';
+import DashboardStats from './DashboardStats';
 
 const AdminDashboard: React.FC = () => {
+    const [currentTerm, setCurrentTerm] = useState('');
+
+    useEffect(() => {
+        api.get('/api/system/general').then(res => {
+            if (res.data.academicYear && res.data.semester) {
+                setCurrentTerm(`${res.data.academicYear} - ${res.data.semester}`);
+            }
+        }).catch(err => console.error("Failed to fetch system settings", err));
+    }, []);
+
     return (
         <Container className="mt-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>Admin Dashboard</h2>
+                <div>
+                    <h2>Admin Dashboard</h2>
+                    {currentTerm && <Badge bg="info" className="text-dark mt-2">{currentTerm}</Badge>}
+                </div>
                 <Button variant="outline-primary" onClick={() => window.location.reload()}>Refresh</Button>
             </div>
             
-            <Tabs defaultActiveKey="students" className="mb-4">
+            <Tabs defaultActiveKey="overview" className="mb-4 shadow-sm p-3 bg-white rounded">
+                <Tab eventKey="overview" title="Overview">
+                    <DashboardStats />
+                </Tab>
                 <Tab eventKey="teachers" title="Manage Teachers">
                     <TeacherManager />
                 </Tab>
@@ -23,10 +40,20 @@ const AdminDashboard: React.FC = () => {
                     <StudentManager />
                 </Tab>
                 <Tab eventKey="settings" title="System Settings">
-                    <Card className="p-4 shadow-sm" style={{ maxWidth: '600px' }}>
-                        <h4 className="mb-3">System Settings</h4>
-                        <TimezoneSettings />
-                    </Card>
+                    <Row>
+                        <Col md={6}>
+                            <Card className="p-4 shadow-sm mb-4">
+                                <h4 className="mb-3">General Settings</h4>
+                                <GeneralSettings />
+                            </Card>
+                        </Col>
+                        <Col md={6}>
+                            <Card className="p-4 shadow-sm">
+                                <h4 className="mb-3">Timezone Settings</h4>
+                                <TimezoneSettings />
+                            </Card>
+                        </Col>
+                    </Row>
                 </Tab>
             </Tabs>
         </Container>
@@ -1232,7 +1259,9 @@ const CourseManager = () => {
         name: '',
         code: '',
         teacherId: '',
-        enrollmentKey: ''
+        enrollmentKey: '',
+        academicYear: '',
+        semester: ''
     });
 
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -1262,6 +1291,14 @@ const CourseManager = () => {
 
     useEffect(() => {
         fetchData();
+        // Fetch System Settings
+        api.get('/api/system/general').then(res => {
+            setFormData(prev => ({
+                ...prev,
+                academicYear: res.data.academicYear || '',
+                semester: res.data.semester || ''
+            }));
+        }).catch(err => console.error("Failed to fetch system settings", err));
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | any>) => {
@@ -1275,10 +1312,12 @@ const CourseManager = () => {
             await api.post(`/api/courses/admin/create?teacherId=${formData.teacherId}`, {
                 name: formData.name,
                 code: formData.code,
-                enrollmentKey: formData.enrollmentKey
+                enrollmentKey: formData.enrollmentKey,
+                academicYear: formData.academicYear,
+                semester: formData.semester
             });
             setMsg({ type: 'success', content: 'Course created successfully' });
-            setFormData({ name: '', code: '', teacherId: '', enrollmentKey: '' });
+            setFormData({ name: '', code: '', teacherId: '', enrollmentKey: '', academicYear: formData.academicYear, semester: formData.semester }); // Keep defaults
             fetchData();
         } catch (err: any) {
             console.error(err);
@@ -1671,8 +1710,9 @@ const StudentManager = () => {
 
 const TimezoneSettings = () => {
     const [timezone, setTimezone] = useState('');
-    const [msg, setMsg] = useState('');
-    
+    const [loading, setLoading] = useState(false);
+    const [msg, setMsg] = useState({ type: '', content: '' });
+
     const timezones = [
         "Asia/Colombo",
         "UTC",
@@ -1683,31 +1723,131 @@ const TimezoneSettings = () => {
     ];
 
     useEffect(() => {
-        api.get('/api/system/timezone').then(res => setTimezone(res.data.timezone)).catch(console.error);
+        fetchTimezone();
     }, []);
 
-    const handleSave = async () => {
+    const fetchTimezone = async () => {
+        try {
+            const res = await api.get('/api/system/timezone');
+            setTimezone(res.data.timezone);
+        } catch (err) {
+            console.error("Failed to fetch timezone", err);
+        }
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setMsg({ type: '', content: '' });
         try {
             await api.post('/api/system/timezone', { timezone });
-            setMsg('Timezone updated successfully');
-            setTimeout(() => setMsg(''), 3000);
-        } catch (e) {
-            console.error(e);
-            setMsg('Failed to update');
+            setMsg({ type: 'success', content: 'Timezone updated successfully' });
+        } catch (err: any) {
+            setMsg({ type: 'danger', content: 'Failed to update timezone' });
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div>
-            {msg && <Alert variant="info">{msg}</Alert>}
+        <Form onSubmit={handleUpdate}>
+            {msg.content && <Alert variant={msg.type} dismissible onClose={() => setMsg({ type: '', content: '' })}>{msg.content}</Alert>}
             <Form.Group className="mb-3">
                 <Form.Label>System Timezone</Form.Label>
-                <Form.Select value={timezone} onChange={(e: any) => setTimezone(e.target.value)}>
+                <Form.Select value={timezone} onChange={e => setTimezone(e.target.value)}>
                     {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                 </Form.Select>
+                <Form.Text className="text-muted">
+                    This affects how dates and times are stored and displayed.
+                </Form.Text>
             </Form.Group>
-            <Button variant="warning" onClick={handleSave}>Update Timezone</Button>
-        </div>
+            <Button variant="primary" type="submit" disabled={loading}>
+                {loading ? <Spinner animation="border" size="sm" /> : 'Update Timezone'}
+            </Button>
+        </Form>
+    );
+};
+
+const GeneralSettings = () => {
+    const [settings, setSettings] = useState({
+        academicYear: '',
+        semester: '',
+        attendanceThreshold: 80,
+        sessionDuration: 60
+    });
+    const [loading, setLoading] = useState(false);
+    const [msg, setMsg] = useState({ type: '', content: '' });
+
+    useEffect(() => {
+        fetchSettings();
+    }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await api.get('/api/system/general');
+            setSettings(res.data);
+        } catch (err) {
+            console.error("Failed to fetch settings", err);
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<any>) => {
+        setSettings({ ...settings, [e.target.name]: e.target.value });
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setMsg({ type: '', content: '' });
+        try {
+            await api.post('/api/system/general', settings);
+            setMsg({ type: 'success', content: 'Settings updated successfully' });
+        } catch (err: any) {
+            setMsg({ type: 'danger', content: 'Failed to update settings' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Form onSubmit={handleUpdate}>
+            {msg.content && <Alert variant={msg.type} dismissible onClose={() => setMsg({ type: '', content: '' })}>{msg.content}</Alert>}
+            <Row>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Academic Year</Form.Label>
+                        <Form.Control type="text" name="academicYear" value={settings.academicYear} onChange={handleChange} placeholder="e.g. 2023/2024" required />
+                    </Form.Group>
+                </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Semester</Form.Label>
+                        <Form.Select name="semester" value={settings.semester} onChange={handleChange}>
+                            <option value="Semester 1">Semester 1</option>
+                            <option value="Semester 2">Semester 2</option>
+                        </Form.Select>
+                    </Form.Group>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Attendance Threshold (%)</Form.Label>
+                        <Form.Control type="number" name="attendanceThreshold" value={settings.attendanceThreshold} onChange={handleChange} min={0} max={100} required />
+                        <Form.Text className="text-muted">Minimum % for good standing</Form.Text>
+                    </Form.Group>
+                </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Default Session Duration (mins)</Form.Label>
+                        <Form.Control type="number" name="sessionDuration" value={settings.sessionDuration} onChange={handleChange} min={15} required />
+                    </Form.Group>
+                </Col>
+            </Row>
+            <Button variant="primary" type="submit" disabled={loading}>
+                {loading ? <Spinner animation="border" size="sm" /> : 'Save Changes'}
+            </Button>
+        </Form>
     );
 };
 

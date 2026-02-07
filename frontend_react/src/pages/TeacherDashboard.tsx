@@ -8,6 +8,8 @@ interface Course {
   name: string;
   code: string;
   archived: boolean;
+  academicYear?: string;
+  semester?: string;
 }
 
 const TeacherDashboard: React.FC = () => {
@@ -15,6 +17,7 @@ const TeacherDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
+  const [currentTerm, setCurrentTerm] = useState('');
   
   // Form State
   const [newCourse, setNewCourse] = useState({ name: '', code: '', enrollmentKey: '' });
@@ -36,6 +39,11 @@ const TeacherDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchMyCourses();
+    api.get('/api/system/general').then(res => {
+        if (res.data.academicYear && res.data.semester) {
+            setCurrentTerm(`${res.data.academicYear} - ${res.data.semester}`);
+        }
+    }).catch(err => console.error("Failed to fetch system settings", err));
   }, []);
 
   const handleCreate = async () => {
@@ -72,7 +80,13 @@ const TeacherDashboard: React.FC = () => {
                     <Badge bg={course.archived ? "secondary" : "primary"} className="p-2 fs-6">{course.code}</Badge>
                     {course.archived && <Badge bg="warning" text="dark">Archived</Badge>}
                  </div>
-                 <Card.Title className="fw-bold fs-5 mb-3">{course.name}</Card.Title>
+                 <Card.Title className="fw-bold fs-5 mb-2">{course.name}</Card.Title>
+                 {course.academicYear && course.semester && (
+                    <div className="mb-3 small text-muted">
+                        <i className="bi bi-calendar-event me-1"></i>
+                        {course.academicYear} - {course.semester}
+                    </div>
+                 )}
                  
                  <div className="mt-auto pt-3 d-flex gap-2 flex-column">
                     <Button variant="outline-primary" className="w-100" as={Link} to={`/teacher/course/${course.id}`}>
@@ -99,7 +113,10 @@ const TeacherDashboard: React.FC = () => {
   return (
     <Container className="mt-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="page-title mb-0">Teacher Dashboard</h2>
+        <div>
+            <h2 className="page-title mb-0">Teacher Dashboard</h2>
+            {currentTerm && <Badge bg="info" className="text-dark mt-2">{currentTerm}</Badge>}
+        </div>
         <Button variant="success" className="px-4 py-2 fw-bold" onClick={() => setShowModal(true)}>
            + Create Course
         </Button>

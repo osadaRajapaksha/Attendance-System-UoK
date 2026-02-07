@@ -48,6 +48,7 @@ public class OtpService {
             logger.info("Email sent successfully to {}", to);
         } catch (Exception e) {
             logger.error("Failed to send email to {}: {}", to, e.getMessage());
+            throw new RuntimeException("Failed to send email: " + e.getMessage());
         }
     }
 

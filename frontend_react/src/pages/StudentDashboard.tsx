@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Container, Tabs, Tab, Button, Alert, Spinner, Badge, Card, Row, Col, Modal, Form, Dropdown } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 
@@ -12,11 +12,13 @@ interface Course {
   teacherName: string;
   hasEnrollmentKey: boolean;
   isArchived?: boolean;
+  academicYear?: string;
+  semester?: string;
 }
 
 const StudentDashboard: React.FC = () => {
   const user = useContext(AuthContext)?.user;
-  const navigate = useNavigate();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,6 +59,17 @@ const StudentDashboard: React.FC = () => {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [enrollmentKey, setEnrollmentKey] = useState('');
+  const [enrollError, setEnrollError] = useState('');
+  
+  const [currentTerm, setCurrentTerm] = useState('');
+
+  useEffect(() => {
+      api.get('/api/system/general').then(res => {
+          if (res.data.academicYear && res.data.semester) {
+              setCurrentTerm(`${res.data.academicYear} - ${res.data.semester}`);
+          }
+      }).catch(err => console.error("Failed to fetch system settings", err));
+  }, []);
 
   // Account State
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -97,6 +110,7 @@ const StudentDashboard: React.FC = () => {
       if (course.hasEnrollmentKey) {
           setSelectedCourse(course);
           setEnrollmentKey('');
+          setEnrollError('');
           setShowEnrollModal(true);
       } else {
           submitEnrollment(course.id, null);
@@ -107,13 +121,19 @@ const StudentDashboard: React.FC = () => {
     try {
       setError('');
       setSuccess('');
+      setEnrollError('');
       
       await api.post(`/api/courses/${courseId}/enroll${key ? `?key=${key}` : ''}`);
       setSuccess('Enrolled successfully!');
       setShowEnrollModal(false);
       fetchEnrolledCourses();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Enrollment failed');
+      const msg = err.response?.data?.message || 'Enrollment failed';
+      if (key) {
+           setEnrollError(msg);
+      } else {
+           setError(msg);
+      }
       console.error(err);
     }
   };
@@ -175,10 +195,16 @@ const StudentDashboard: React.FC = () => {
               </div>
             </div>
             <Card.Title className="mt-2 text-truncate" title={course.name}>{course.name}</Card.Title>
-            <Card.Subtitle className="mb-3 text-muted small">
+            <Card.Subtitle className="mb-2 text-muted small">
                  <i className="bi bi-person-fill me-1"></i>
                  {course.teacherName}
             </Card.Subtitle>
+            {course.academicYear && course.semester && (
+                <div className="mb-3 small text-info">
+                    <i className="bi bi-calendar-event me-1"></i>
+                    {course.academicYear} - {course.semester}
+                </div>
+            )}
             <Card.Text className="text-muted flex-grow-1">
               Explore the content of {course.name}.
             </Card.Text>
@@ -202,7 +228,10 @@ const StudentDashboard: React.FC = () => {
   return (
     <Container className="mt-5">
        <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="page-title mb-0">Student Dashboard</h2>
+        <div>
+            <h2 className="page-title mb-0">Student Dashboard</h2>
+            {currentTerm && <Badge bg="info" className="text-dark mt-2">{currentTerm}</Badge>}
+        </div>
       </div>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
@@ -358,6 +387,7 @@ const StudentDashboard: React.FC = () => {
             <Modal.Title>Enter Enrollment Key</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+            {enrollError && <Alert variant="danger">{enrollError}</Alert>}
             <p>The course <strong>{selectedCourse?.name}</strong> requires an enrollment key.</p>
             <Form.Group>
                 <Form.Label>Enrollment Key</Form.Label>
