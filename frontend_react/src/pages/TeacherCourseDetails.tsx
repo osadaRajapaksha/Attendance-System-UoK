@@ -68,7 +68,9 @@ const TeacherCourseDetails: React.FC = () => {
     };
 
     // Sort sessions for gradebook cols
-    const sortedSessions = [...sessions].sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    const sortedSessions = sessions
+        .filter(s => s.status !== 'DELETED')
+        .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     // Edit Modal State
     const [showEditModal, setShowEditModal] = useState(false);
@@ -321,6 +323,24 @@ const TeacherCourseDetails: React.FC = () => {
         XLSX.writeFile(wb, `${course.code}_${selectedSessionTitle}_Attendance.xlsx`);
     };
 
+    const handleDownloadGradebook = async () => {
+        try {
+            const response = await api.get(`/api/teachers/courses/${courseId}/gradebook/export`, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Gradebook_${course?.code}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to download gradebook.");
+        }
+    };
+
     if (loading) return <Container className="mt-5 text-center"><Spinner animation="border" /></Container>;
     if (error) return <Container className="mt-5"><Alert variant="danger">{error}</Alert></Container>;
     if (!course) return <Container className="mt-5"><Alert variant="warning">Course not found</Alert></Container>;
@@ -428,6 +448,12 @@ const TeacherCourseDetails: React.FC = () => {
                 <Tab eventKey="gradebook" title="Gradebook / Analytics">
                     <Card>
                         <Card.Body>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h5 className="mb-0">Class Performance</h5>
+                                <Button variant="success" size="sm" onClick={handleDownloadGradebook}>
+                                    <i className="bi bi-file-earmark-spreadsheet me-2"></i> Export Gradebook
+                                </Button>
+                            </div>
                             {loadingGradebook ? <Spinner animation="border" /> : (
                                 <div style={{ overflowX: 'auto' }}>
                                     <Table bordered hover size="sm" className="mb-0">

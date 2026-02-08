@@ -123,7 +123,12 @@ public class AttendanceService {
             studentIds = new java.util.ArrayList<>();
 
         // 2. Get All Sessions for Course
-        List<com.example.Attendance_System_UoK.model.Session> sessions = sessionRepository.findByCourseId(courseId);
+        List<com.example.Attendance_System_UoK.model.Session> rawSessions = sessionRepository.findByCourseId(courseId);
+
+        // Filter out DELETED sessions
+        List<com.example.Attendance_System_UoK.model.Session> sessions = rawSessions.stream()
+                .filter(s -> s.getStatus() != com.example.Attendance_System_UoK.model.SessionStatus.DELETED)
+                .collect(Collectors.toList());
 
         // 3. Pre-fetch all attendance for these sessions (optimization possible, but
         // simple for now)

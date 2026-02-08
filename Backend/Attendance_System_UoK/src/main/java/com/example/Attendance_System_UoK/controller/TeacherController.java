@@ -18,9 +18,18 @@ import com.example.Attendance_System_UoK.model.Course;
 public class TeacherController {
 
     private final TeacherService teacherService;
+    private final com.example.Attendance_System_UoK.service.AttendanceService attendanceService;
+    private final com.example.Attendance_System_UoK.service.ExcelExportService excelExportService;
+    private final com.example.Attendance_System_UoK.repository.SessionRepository sessionRepository;
 
-    public TeacherController(TeacherService teacherService) {
+    public TeacherController(TeacherService teacherService,
+            com.example.Attendance_System_UoK.service.AttendanceService attendanceService,
+            com.example.Attendance_System_UoK.service.ExcelExportService excelExportService,
+            com.example.Attendance_System_UoK.repository.SessionRepository sessionRepository) {
         this.teacherService = teacherService;
+        this.attendanceService = attendanceService;
+        this.excelExportService = excelExportService;
+        this.sessionRepository = sessionRepository;
     }
 
     // ADMIN only
@@ -47,5 +56,32 @@ public class TeacherController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Course>> getTeacherCourses(@PathVariable String id) {
         return ResponseEntity.ok(teacherService.getTeacherCourses(id));
+    }
+
+    // Export Gradebook
+    @GetMapping("/courses/{courseId}/gradebook/export")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    public ResponseEntity<org.springframework.core.io.InputStreamResource> exportGradebook(
+            @PathVariable String courseId) {
+        // 1. Get Sessions (filtered)
+        List<com.example.Attendance_System_UoK.model.Session> sessions = sessionRepository.findByCourseId(courseId);
+        sessions.removeIf(s -> s.getStatus() == com.example.Attendance_System_UoK.model.SessionStatus.DELETED);
+
+        // 2. Get Report Data
+        List<com.example.Attendance_System_UoK.dto.CourseAttendanceReportDTO> reportData = attendanceService
+                .getCourseAttendanceReport(courseId);
+
+        // 3. Generate Excel
+        java.io.ByteArrayInputStream in = excelExportService.generateSessionWiseAttendanceReport("Gradebook",
+                reportData, sessions);
+
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=gradebook-" + courseId + ".xlsx");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.ms-excel"))
+                .body(new org.springframework.core.io.InputStreamResource(in));
     }
 }
