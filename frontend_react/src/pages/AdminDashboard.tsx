@@ -23,23 +23,23 @@ const AdminDashboard: React.FC = () => {
                     <h2>Admin Dashboard</h2>
                     {currentTerm && <Badge bg="info" className="text-dark mt-2">{currentTerm}</Badge>}
                 </div>
-                <Button variant="outline-primary" onClick={() => window.location.reload()}>Refresh</Button>
+                <Button variant="outline-primary" onClick={() => window.location.reload()}><i className="bi bi-arrow-clockwise me-1"></i>Refresh</Button>
             </div>
             
             <Tabs defaultActiveKey="overview" className="mb-4 shadow-sm p-3 bg-white rounded">
-                <Tab eventKey="overview" title="Overview">
+                <Tab eventKey="overview" title={<span><i className="bi bi-speedometer2 me-2"></i>Overview</span>}>
                     <DashboardStats />
                 </Tab>
-                <Tab eventKey="teachers" title="Manage Teachers">
+                <Tab eventKey="teachers" title={<span><i className="bi bi-person-video3 me-2"></i>Manage Teachers</span>}>
                     <TeacherManager />
                 </Tab>
-                <Tab eventKey="courses" title="Manage Courses">
+                <Tab eventKey="courses" title={<span><i className="bi bi-book me-2"></i>Manage Courses</span>}>
                     <CourseManager />
                 </Tab>
-                <Tab eventKey="students" title="Manage Students">
+                <Tab eventKey="students" title={<span><i className="bi bi-people me-2"></i>Manage Students</span>}>
                     <StudentManager />
                 </Tab>
-                <Tab eventKey="settings" title="System Settings">
+                <Tab eventKey="settings" title={<span><i className="bi bi-gear me-2"></i>System Settings</span>}>
                     <Row>
                         <Col md={6}>
                             <Card className="p-4 shadow-sm mb-4">
@@ -255,7 +255,7 @@ const TeacherDetailsModal = ({ show, onHide, teacher, refreshTeachers }: { show:
                                     {positions.map(p => <option key={p} value={p}>{p}</option>)}
                                 </Form.Select>
                             </Form.Group>
-                            <Button variant="primary" type="submit">Update Details</Button>
+                            <Button variant="primary" type="submit"><i className="bi bi-save me-1"></i>Update Details</Button>
                         </Form>
                     </Tab>
                     <Tab eventKey="password" title="Security">
@@ -265,8 +265,8 @@ const TeacherDetailsModal = ({ show, onHide, teacher, refreshTeachers }: { show:
                                 <Form.Control type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6} />
                             </Form.Group>
                             <div className="d-flex gap-2">
-                                <Button variant="primary" type="submit">Update Password</Button>
-                                <Button variant="warning" type="button" onClick={handleDefaultReset}>Reset to Default (Teacher ID)</Button>
+                                <Button variant="primary" type="submit"><i className="bi bi-key me-1"></i>Update Password</Button>
+                                <Button variant="warning" type="button" onClick={handleDefaultReset}><i className="bi bi-arrow-counterclockwise me-1"></i>Reset to Default (Teacher ID)</Button>
                             </div>
                         </Form>
                     </Tab>
@@ -282,7 +282,7 @@ const TeacherDetailsModal = ({ show, onHide, teacher, refreshTeachers }: { show:
                                             <Button size="sm" variant="outline-primary" onClick={() => {
                                                 onHide();
                                                 navigate(`/teacher/course/${course.id}`);
-                                            }}>View Course</Button>
+                                            }}><i className="bi bi-eye me-1"></i>View Course</Button>
                                         </ListGroup.Item>
                                     ))}
                                 </ListGroup>
@@ -426,7 +426,7 @@ const TeacherManager = () => {
         <Row>
             <Col md={5}>
                  <Card className="shadow-sm mb-4">
-                    <Card.Header className="bg-primary text-white">Create New Teacher</Card.Header>
+                    <Card.Header className="bg-primary text-white"><i className="bi bi-person-plus-fill me-2"></i>Create New Teacher</Card.Header>
                     <Card.Body>
                         {msg.content && <Alert variant={msg.type} dismissible onClose={() => setMsg({ type: '', content: '' })}>{msg.content}</Alert>}
                         <Form onSubmit={handleCreateTeacher}>
@@ -486,7 +486,7 @@ const TeacherManager = () => {
                                 </Form.Select>
                             </Form.Group>
                             
-                            <Button variant="primary" type="submit" className="w-100">Create Teacher</Button>
+                            <Button variant="primary" type="submit" className="w-100"><i className="bi bi-check-circle-fill me-1"></i>Create Teacher</Button>
                         </Form>
                     </Card.Body>
                 </Card>
@@ -494,7 +494,7 @@ const TeacherManager = () => {
             <Col md={7}>
                 <Card className="shadow-sm">
                     <Card.Header className="bg-white d-flex justify-content-between align-items-center">
-                        <span className="h5 mb-0">Teacher List</span>
+                        <span className="h5 mb-0"><i className="bi bi-list-ul me-2"></i>Teacher List</span>
                          <InputGroup style={{ maxWidth: '250px' }} size="sm">
                             <Form.Control
                                 placeholder="Search Name/ID/Dept"
@@ -539,7 +539,7 @@ const TeacherManager = () => {
                                                             <small className="text-muted">{teacher.faculty}</small>
                                                         </td>
                                                         <td>
-                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteClick(teacher.id)}>Delete</Button>
+                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteClick(teacher.id)}><i className="bi bi-trash"></i></Button>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -596,8 +596,8 @@ const TeacherManager = () => {
 };
 
 const scienceDegreePrograms = [
-    "ECSC", "PE", "MIT", "Applied Chemistry",
-    "PS", "BS", "ENCM", "SS", "SE",
+    "Electronics and Computer Science", "Physics and Electronics", "Management and Information Technology", "Applied Chemistry",
+    "Physical Science", "Bio Science", "Environmental and Conservation Management", "Sport Science", "Software Engineering",
 ];
 
 const StudentDetailsModal = ({ show, onHide, student, refreshStudents }: { show: boolean, onHide: () => void, student: Student | null, refreshStudents: () => void }) => {
@@ -741,7 +741,7 @@ const StudentDetailsModal = ({ show, onHide, student, refreshStudents }: { show:
                                 </Form.Select>
                                 {editData.faculty !== "Science" && <Form.Text className="text-muted">Only available for Science faculty currently.</Form.Text>}
                             </Form.Group>
-                            <Button variant="primary" type="submit">Update Details</Button>
+                            <Button variant="primary" type="submit"><i className="bi bi-save me-1"></i>Update Details</Button>
                         </Form>
                     </Tab>
                     <Tab eventKey="password" title="Security">
@@ -751,8 +751,8 @@ const StudentDetailsModal = ({ show, onHide, student, refreshStudents }: { show:
                                 <Form.Control type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6} />
                             </Form.Group>
                             <div className="d-flex gap-2">
-                                <Button variant="primary" type="submit">Update Password</Button>
-                                <Button variant="warning" type="button" onClick={handleDefaultReset}>Reset to Default (Student ID)</Button>
+                                <Button variant="primary" type="submit"><i className="bi bi-key me-1"></i>Update Password</Button>
+                                <Button variant="warning" type="button" onClick={handleDefaultReset}><i className="bi bi-arrow-counterclockwise me-1"></i>Reset to Default (Student ID)</Button>
                             </div>
                         </Form>
                     </Tab>
@@ -768,7 +768,7 @@ const StudentDetailsModal = ({ show, onHide, student, refreshStudents }: { show:
                                             <Button size="sm" variant="outline-primary" onClick={() => {
                                                 onHide();
                                                 navigate(`/teacher/course/${course.id}`);
-                                            }}>View Course</Button>
+                                            }}><i className="bi bi-eye me-1"></i>View Course</Button>
                                         </ListGroup.Item>
                                     ))}
                                 </ListGroup>
@@ -1049,7 +1049,7 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
 
                             {!isExpired && (
                                 <div className="d-flex justify-content-end mt-3">
-                                    <Button variant="primary" type="submit">Update Session</Button>
+                                    <Button variant="primary" type="submit"><i className="bi bi-save me-1"></i>Update Session</Button>
                                 </div>
                             )}
                             {isExpired && <p className="text-muted mt-3">This session is expired and cannot be edited.</p>}
@@ -1058,10 +1058,10 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
                     <Tab eventKey="attendance" title="Attendance">
                         <div className="d-flex justify-content-end mb-3 gap-2">
                              <Button variant="outline-primary" size="sm" onClick={() => setShowManualMark(!showManualMark)}>
-                                {showManualMark ? 'Hide Manual Mark' : 'Manual Mark'}
+                                {showManualMark ? <span><i className="bi bi-x-square me-1"></i>Hide Manual Mark</span> : <span><i className="bi bi-pencil-square me-1"></i>Manual Mark</span>}
                             </Button>
                             <Button variant="success" size="sm" onClick={handleDownloadExcel}>
-                                Download Excel
+                                <i className="bi bi-file-earmark-spreadsheet me-1"></i>Download Excel
                             </Button>
                         </div>
                         
@@ -1084,7 +1084,7 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
                                         <Form.Label>Note</Form.Label>
                                         <Form.Control type="text" value={manualNote} onChange={e => setManualNote(e.target.value)} placeholder="Reason..." />
                                     </Form.Group>
-                                    <Button variant="primary" onClick={handleManualMark} disabled={!manualStudentId}>Mark</Button>
+                                    <Button variant="primary" onClick={handleManualMark} disabled={!manualStudentId}><i className="bi bi-check-lg me-1"></i>Mark</Button>
                                 </Form>
                             </Card>
                         )}
@@ -1241,7 +1241,7 @@ const CourseDetailsModal = ({ show, onHide, course, refreshCourses }: { show: bo
                                 <Form.Control type="text" value={editData.enrollmentKey || ''} onChange={e => setEditData({...editData, enrollmentKey: e.target.value})} />
                             </Form.Group>
                              <div className="d-flex justify-content-end">
-                                <Button variant="primary" type="submit">Update Course</Button>
+                                <Button variant="primary" type="submit"><i className="bi bi-save me-1"></i>Update Course</Button>
                             </div>
                         </Form>
                     </Tab>
@@ -1275,7 +1275,7 @@ const CourseDetailsModal = ({ show, onHide, course, refreshCourses }: { show: bo
                                 <h6>Attendance Matrix</h6>
                                 <p className="text-muted small">Session-wise attendance for all students.</p>
                                 <Button variant="success" onClick={() => handleDownloadReport('attendance')} disabled={loadingDownload}>
-                                    {loadingDownload ? <Spinner animation="border" size="sm" /> : 'Download Attendance Matrix'}
+                                    {loadingDownload ? <Spinner animation="border" size="sm" /> : <span><i className="bi bi-download me-1"></i>Download Attendance Matrix</span>}
                                 </Button>
                             </Card>
                             
@@ -1283,7 +1283,7 @@ const CourseDetailsModal = ({ show, onHide, course, refreshCourses }: { show: bo
                                 <h6>Enrolled Students</h6>
                                 <p className="text-muted small">List of all currently enrolled students.</p>
                                 <Button variant="info" className="text-white" onClick={() => handleDownloadReport('students')} disabled={loadingDownload}>
-                                    {loadingDownload ? <Spinner animation="border" size="sm" /> : 'Download Student List'}
+                                    {loadingDownload ? <Spinner animation="border" size="sm" /> : <span><i className="bi bi-download me-1"></i>Download Student List</span>}
                                 </Button>
                             </Card>
                         </div>
@@ -1396,7 +1396,7 @@ const CourseManager = () => {
         <Row>
             <Col lg={4} className="mb-4">
                  <Card className="shadow-sm">
-                    <Card.Header className="bg-primary text-white">Create New Course</Card.Header>
+                    <Card.Header className="bg-primary text-white"><i className="bi bi-journal-plus me-2"></i>Create New Course</Card.Header>
                     <Card.Body>
                         {msg.content && <Alert variant={msg.type} dismissible onClose={() => setMsg({ type: '', content: '' })}>{msg.content}</Alert>}
                         <Form onSubmit={handleCreateCourse}>
@@ -1419,7 +1419,7 @@ const CourseManager = () => {
                                     {teachers.map(t => <option key={t.id} value={t.id}>{t.fullName}</option>)}
                                 </Form.Select>
                             </Form.Group>
-                            <Button variant="primary" type="submit" className="w-100">Create Course</Button>
+                            <Button variant="primary" type="submit" className="w-100"><i className="bi bi-check-circle-fill me-1"></i>Create Course</Button>
                         </Form>
                     </Card.Body>
                 </Card>
@@ -1428,7 +1428,7 @@ const CourseManager = () => {
             <Col lg={8}>
                 <Card className="shadow-sm">
                     <Card.Header className="bg-white d-flex justify-content-between align-items-center">
-                        <span className="h5 mb-0">Course List</span>
+                        <span className="h5 mb-0"><i className="bi bi-list-ul me-2"></i>Course List</span>
                         <Badge bg="secondary">{courses.length} Courses</Badge>
                     </Card.Header>
                     <Card.Body className="p-0">
@@ -1455,7 +1455,7 @@ const CourseManager = () => {
                                                     <td>{course.name}</td>
                                                     <td>{course.teacherName}</td>
                                                     <td>
-                                                        <Button variant="outline-danger" size="sm" onClick={(e) => handleDelete(course.id, e)}>Delete</Button>
+                                                        <Button variant="outline-danger" size="sm" onClick={(e) => handleDelete(course.id, e)}><i className="bi bi-trash"></i></Button>
                                                     </td>
                                                 </tr>
                                             ))
@@ -1488,10 +1488,7 @@ interface Student {
 }
 
 const StudentManager = () => {
-    const scienceDegreePrograms = [
-        "ECSC", "PE", "MIT", "Applied Chemistry",
-        "PS", "BS", "ENCM", "SS", "SE",
-    ];
+
 
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(false);
@@ -1618,7 +1615,7 @@ const StudentManager = () => {
         <Row>
             <Col lg={4} className="mb-4">
                  <Card className="shadow-sm">
-                    <Card.Header className="bg-primary text-white">Create New Student</Card.Header>
+                    <Card.Header className="bg-primary text-white"><i className="bi bi-person-plus-fill me-2"></i>Create New Student</Card.Header>
                     <Card.Body>
                         {msg.content && <Alert variant={msg.type} dismissible onClose={() => setMsg({ type: '', content: '' })}>{msg.content}</Alert>}
                         <Form onSubmit={handleCreateStudent}>
@@ -1658,7 +1655,7 @@ const StudentManager = () => {
                                 </Form.Select>
                                 {formData.faculty !== "Science" && <Form.Text className="text-muted">Only available for Science faculty currently.</Form.Text>}
                             </Form.Group>
-                            <Button variant="primary" type="submit" className="w-100">Create Student</Button>
+                            <Button variant="primary" type="submit" className="w-100"><i className="bi bi-check-circle-fill me-1"></i>Create Student</Button>
                         </Form>
                     </Card.Body>
                 </Card>
@@ -1667,7 +1664,7 @@ const StudentManager = () => {
             <Col lg={8}>
                 <Card className="shadow-sm">
                     <Card.Header className="bg-white d-flex justify-content-between align-items-center">
-                        <span className="h5 mb-0">Student List</span>
+                        <span className="h5 mb-0"><i className="bi bi-list-ul me-2"></i>Student List</span>
                         <div className="d-flex align-items-center">
                             <InputGroup className="me-3" style={{ maxWidth: '300px' }}>
                                 <Form.Control
@@ -1676,7 +1673,7 @@ const StudentManager = () => {
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
-                                <Button variant="outline-primary" onClick={handleSearch}>Search</Button>
+                                <Button variant="outline-primary" onClick={handleSearch}><i className="bi bi-search me-1"></i>Search</Button>
                             </InputGroup>
                         </div>
                     </Card.Header>
@@ -1717,7 +1714,7 @@ const StudentManager = () => {
                                                             <small className="text-muted">{student.degreeProgram}</small>
                                                         </td>
                                                         <td>
-                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDelete(student.id)}>Delete</Button>
+                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDelete(student.id)}><i className="bi bi-trash"></i></Button>
                                                         </td>
                                                     </tr>
                                                 ))
