@@ -1,8 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Form, Button, Container, Alert, Spinner } from 'react-bootstrap';
+import { Form, Button, Container, Alert, Spinner, Card } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
+import uokLogo from '../assets/Attendance_system_uok.png';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -34,22 +35,22 @@ const Login: React.FC = () => {
 
       const response = await api.post('/api/auth/login', payload);
       const data = response.data;
-      
+
       // Check if 2FA is required
       if (data.requiresTwoFactor) {
-          setShowOtp(true);
-          setLoading(false);
-          return;
+        setShowOtp(true);
+        setLoading(false);
+        return;
       }
 
       const { token, deviceToken, role, fullName, studentId, teacherId, adminId, degreeProgram, faculty } = data;
-      
+
       // Device Lock Anti-Fraud
       const existingDeviceToken = localStorage.getItem('device_token');
       if (!existingDeviceToken && deviceToken) {
-          localStorage.setItem('device_token', deviceToken);
+        localStorage.setItem('device_token', deviceToken);
       }
-      
+
       auth?.login({
         token,
         email,
@@ -66,13 +67,13 @@ const Login: React.FC = () => {
       else if (role === 'ROLE_TEACHER') navigate('/teacher-dashboard');
       else if (role === 'ROLE_ADMIN') navigate('/admin-dashboard');
       else navigate('/');
-      
+
     } catch (err: any) {
       console.error(err);
       if (err.response && err.response.data && err.response.data.message) {
-          setError(err.response.data.message);
+        setError(err.response.data.message);
       } else {
-          setError('Invalid email or password');
+        setError('Invalid email or password');
       }
     } finally {
       if (!showOtp) setLoading(false); // Only stop loading if not switching to OTP mode
@@ -82,59 +83,65 @@ const Login: React.FC = () => {
 
   return (
     <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-      <div className="w-100" style={{ maxWidth: '400px' }}>
-        <h2 className="text-center mb-4">Login</h2>
-        {error && <Alert variant="danger">{error}</Alert>}
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3" controlId="formBasicEmail">
-            <Form.Label>Email address</Form.Label>
-            <Form.Control 
-              type="email" 
-              placeholder="Enter email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required 
-            />
-          </Form.Group>
 
-          <Form.Group className="mb-3" controlId="formBasicPassword">
-            <Form.Label>Password</Form.Label>
-            <Form.Control 
-              type="password" 
-              placeholder="Password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-              disabled={showOtp}
-            />
-          </Form.Group>
+      <Card style={{ width: '100%', maxWidth: '500px' }} className="shadow">
+        <Card.Body>
+          <div className="text-center mb-4">
+            <img src={uokLogo} alt="University Logo" style={{ maxWidth: '400px', height: 'auto' }} />
+          </div>
+          {error && <Alert variant="danger">{error}</Alert>}
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-4" controlId="formBasicEmail">
+              <Form.Label>Email address</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </Form.Group>
 
-          {showOtp && (
+            <Form.Group className="mb-4" controlId="formBasicPassword">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={showOtp}
+              />
+            </Form.Group>
+
+            {showOtp && (
               <Form.Group className="mb-3" controlId="formBasicOtp">
                 <Form.Label>One-Time Password (OTP)</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  placeholder="Enter OTP sent to your email" 
+                <Form.Control
+                  type="text"
+                  placeholder="Enter OTP sent to your email"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  required 
+                  required
                 />
                 <Form.Text className="text-muted">
-                    Check your email for the 6-digit code.
+                  Check your email for the 6-digit code.
                 </Form.Text>
               </Form.Group>
-          )}
-          <Button variant="primary" type="submit" className="w-100" disabled={loading}>
-            {loading ? <Spinner animation="border" size="sm" /> : 'Login'}
-          </Button>
-          <div className="text-end mt-2">
-            <Link to="/forgot-password" style={{ fontSize: '0.9rem' }}>Forgot Password?</Link>
+            )}
+            <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+              {loading ? <Spinner animation="border" size="sm" /> : 'Login'}
+            </Button>
+            <div className="text-end mt-3">
+              <Link to="/forgot-password" style={{ fontSize: '0.9rem' }}>Forgot Password?</Link>
+            </div>
+          </Form>
+          <div className="w-100 text-center mt-3">
+            Need an account? <Link to="/register">Sign Up</Link>
           </div>
-        </Form>
-        <div className="w-100 text-center mt-3">
-          Need an account? <Link to="/register">Sign Up</Link>
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
+
     </Container>
   );
 };

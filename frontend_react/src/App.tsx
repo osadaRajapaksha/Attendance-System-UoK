@@ -1,5 +1,5 @@
 
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import NavBar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -38,9 +38,12 @@ import Terms from './pages/Terms';
 // ... (existing code)
 
 function App() {
+  const location = useLocation();
+  const hideNavBar = ['/login', '/register', '/forgot-password'].includes(location.pathname);
+
   return (
-    <div className="d-flex flex-column min-vh-100">
-      <NavBar />
+    <div className={`d-flex flex-column min-vh-100 ${hideNavBar ? 'auth-bg' : ''}`}>
+      {!hideNavBar && <NavBar />}
       <div className="flex-grow-1">
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
@@ -48,7 +51,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/terms" element={<Terms />} />
-          
+
           {/* Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={['ROLE_STUDENT']} />}>
             <Route path="/student-dashboard" element={<StudentDashboard />} />

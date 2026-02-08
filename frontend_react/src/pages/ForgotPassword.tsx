@@ -52,7 +52,7 @@ const ForgotPassword = () => {
 
     return (
         <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-            <Card style={{ width: '100%', maxWidth: '400px' }} className="shadow">
+            <Card style={{ width: '100%', maxWidth: '500px' }} className="shadow">
                 <Card.Body>
                     <h3 className="text-center mb-4">Forgot Password</h3>
                     {msg.content && <Alert variant={msg.type} dismissible onClose={() => setMsg({ type: '', content: '' })}>{msg.content}</Alert>}
