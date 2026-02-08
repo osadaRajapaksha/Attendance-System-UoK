@@ -215,7 +215,7 @@ const Register: React.FC = () => {
             <Form.Group className="mb-3">
               <Form.Check
                 type="checkbox"
-                label={<span>I agree to the <Link to="/terms" target="_blank">Terms and Conditions</Link></span>}
+                label={<span>I agree to the <Link to="/terms" target="_blank" className="custom-link">Terms and Conditions</Link></span>}
                 checked={formData.agreeToTerms}
                 onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
                 required
@@ -227,7 +227,7 @@ const Register: React.FC = () => {
             </Button>
           </Form>
           <div className="w-100 text-center mt-3">
-            Already have an account? <Link to="/login">Login</Link>
+            Already have an account? <Link to="/login" className="custom-link">Login</Link>
           </div>
         </Card.Body>
       </Card>

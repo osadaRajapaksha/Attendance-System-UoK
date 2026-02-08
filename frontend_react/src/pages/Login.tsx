@@ -133,11 +133,11 @@ const Login: React.FC = () => {
               {loading ? <Spinner animation="border" size="sm" /> : 'Login'}
             </Button>
             <div className="text-end mt-3">
-              <Link to="/forgot-password" style={{ fontSize: '0.9rem' }}>Forgot Password?</Link>
+              <Link to="/forgot-password" className="custom-link fw-bold" style={{ fontSize: '0.9rem' }}>Forgot Password?</Link>
             </div>
           </Form>
           <div className="w-100 text-center mt-3">
-            Need an account? <Link to="/register">Sign Up</Link>
+            Need an account? <Link to="/register" className="custom-link">Sign Up</Link>
           </div>
         </Card.Body>
       </Card>

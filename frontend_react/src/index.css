@@ -8,8 +8,8 @@
   --glass-bg: rgba(255, 255, 255, 0.5);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
+  --text-primary: #900505;
+  --text-secondary: rgb(100, 116, 139);
   --radius: 16px;
 }
 
@@ -91,7 +91,7 @@ body {
 .btn-primary:hover {
   background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)) !important;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6);
+  box-shadow: 0 8px 25px rgba(255, 14, 14, 0.6);
 }
 
 .btn-success {
@@ -175,4 +175,17 @@ p {
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+/* Custom Links */
+.custom-link {
+  color: #900505 !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease;
+}
+
+.custom-link:hover {
+  color: #da3d11b6 !important;
+  /* Lighter red/orange for hover */
+  text-decoration: underline !important;
 }
