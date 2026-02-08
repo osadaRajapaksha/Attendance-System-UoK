@@ -1505,7 +1505,6 @@ const StudentManager = () => {
 
     // Create Form State
     const [formData, setFormData] = useState({
-        studentId: '',
         fullName: '',
         email: '',
         password: '',
@@ -1584,7 +1583,6 @@ const StudentManager = () => {
             await api.post('/api/admin/students', formData);
             setMsg({ type: 'success', content: 'Student created successfully' });
             setFormData({
-                studentId: '',
                 fullName: '',
                 email: '',
                 password: '',
@@ -1628,10 +1626,7 @@ const StudentManager = () => {
                                 <Form.Label>Full Name</Form.Label>
                                 <Form.Control type="text" name="fullName" value={formData.fullName} onChange={handleChange} required />
                             </Form.Group>
-                            <Form.Group className="mb-2">
-                                <Form.Label>Student ID (e.g. SE/2021/001)</Form.Label>
-                                <Form.Control type="text" name="studentId" value={formData.studentId} onChange={handleChange} required placeholder="XX/YYYY/NUM" />
-                            </Form.Group>
+
                              <Form.Group className="mb-2">
                                 <Form.Label>Email</Form.Label>
                                 <Form.Control type="email" name="email" value={formData.email} onChange={handleChange} required />

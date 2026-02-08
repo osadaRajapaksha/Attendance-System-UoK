@@ -124,10 +124,29 @@ public class AdminService {
             throw new RuntimeException("Email already exists");
         }
 
-        // Basic Student ID Validation
+        // Extract or Validate Student ID
         String studentId = request.getStudentId();
-        if (studentId == null || !studentId.matches("^[A-Z]{2}/\\d{4}/\\d{3,5}$")) {
-            throw new RuntimeException("Invalid Student ID format. Expected: XX/year/number");
+
+        // If ID is not provided, try to extract from email
+        if (studentId == null || studentId.trim().isEmpty()) {
+            java.util.regex.Pattern pattern = java.util.regex.Pattern
+                    .compile(".*-([a-zA-Z]{2})(\\d{2})(\\d{3,})@stu\\.kln\\.ac\\.lk$");
+            java.util.regex.Matcher matcher = pattern.matcher(request.getEmail());
+
+            if (matcher.find()) {
+                String dept = matcher.group(1).toUpperCase();
+                String year = "20" + matcher.group(2);
+                String number = matcher.group(3);
+                studentId = dept + "/" + year + "/" + number;
+            } else {
+                throw new RuntimeException(
+                        "Invalid Student Email Format for ID extraction. Expected: name-deptYearNumber@stu.kln.ac.lk");
+            }
+        } else {
+            // If ID provided manually, validate format
+            if (!studentId.matches("^[A-Z]{2}/\\d{4}/\\d{3,5}$")) {
+                throw new RuntimeException("Invalid Student ID format. Expected: XX/year/number");
+            }
         }
 
         com.example.Attendance_System_UoK.model.Student student = new com.example.Attendance_System_UoK.model.Student();
@@ -140,7 +159,7 @@ public class AdminService {
         student.setCreatedAt(java.time.LocalDateTime.now());
         student.setUpdatedAt(java.time.LocalDateTime.now());
 
-        student.setStudentId(request.getStudentId());
+        student.setStudentId(studentId);
         student.setDegreeProgram(request.getDegreeProgram());
         student.setDepartment(request.getDepartment());
         student.setFaculty(request.getFaculty());
