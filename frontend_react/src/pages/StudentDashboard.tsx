@@ -27,6 +27,7 @@ const StudentDashboard: React.FC = () => {
   
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Fetch all courses from the backend
   const fetchCourses = async () => {
     try {
       const res = await api.get('/api/courses');
@@ -37,6 +38,7 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
+  // Fetch courses the student is enrolled in (expects array of courses)
   const fetchEnrolledCourses = async () => {
     try {
       const res = await api.get<Course[]>('/api/courses/enrolled');
@@ -45,7 +47,8 @@ const StudentDashboard: React.FC = () => {
       console.error(err);
     }
   };
-
+  
+// On mount: load both all courses and enrolled courses in parallel
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -62,7 +65,8 @@ const StudentDashboard: React.FC = () => {
   const [enrollError, setEnrollError] = useState('');
   
   const [currentTerm, setCurrentTerm] = useState('');
-
+  
+// Fetch system general settings to show current academic term (year + semester)
   useEffect(() => {
       api.get('/api/system/general').then(res => {
           if (res.data.academicYear && res.data.semester) {
@@ -71,14 +75,15 @@ const StudentDashboard: React.FC = () => {
       }).catch(err => console.error("Failed to fetch system settings", err));
   }, []);
 
-  // Account State
+  // Account State(Change Password modal)
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passMsg, setPassMsg] = useState('');
   const [passError, setPassError] = useState('');
-
+  
+// Handler to change password: validates and posts to API
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPassMsg('');
@@ -96,6 +101,7 @@ const StudentDashboard: React.FC = () => {
         confirmNewPassword: confirmPassword
       });
       setPassMsg("Password changed successfully");
+      // clear fields and close modal after a short delay
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
