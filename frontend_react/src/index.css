@@ -203,6 +203,6 @@ p {
 
 @media (max-width: 480px) {
   .responsive-logo {
-    width: 90%;
+    width: 50%;
   }
 }
