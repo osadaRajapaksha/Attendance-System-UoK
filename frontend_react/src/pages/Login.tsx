@@ -113,7 +113,7 @@ const Login: React.FC = () => {
   <img
     src={uokLogo}
     alt="University Logo"
-    style={{ maxWidth: '400px', height: 'auto' }}
+    style={{ maxWidth: '400px', height: 'auto',width:'80%' }}
   />
 </div>
 
