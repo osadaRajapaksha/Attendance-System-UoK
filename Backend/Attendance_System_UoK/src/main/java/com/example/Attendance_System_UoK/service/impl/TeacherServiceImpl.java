@@ -32,6 +32,11 @@ public class TeacherServiceImpl implements TeacherService {
         teacher.setUsername(teacher.getUsername());
         teacher.setPassword(passwordEncoder.encode(teacher.getPassword()));
         teacher.setRole(Role.ROLE_TEACHER);
+        if (teacherRepository.findByEmail(teacher.getEmail()).isPresent()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT, "Email already exists");
+        }
+
         teacher.setCreatedAt(LocalDateTime.now());
         teacher.setUpdatedAt(LocalDateTime.now());
 

@@ -60,6 +60,36 @@ const AdminDashboard: React.FC = () => {
     );
 };
 
+// Global Constants
+const faculties = ["Science", "FCMS", "Arts", "FCT"];
+
+const facultyDepartments: { [key: string]: string[] } = {
+    "Science": [
+        "Department of Chemistry",
+        "Department of Industrial Management",
+        "Department of Mathematics",
+        "Department of Microbiology",
+        "Department of Physics and Electronics",
+        "Department of Plant and Molecular Biology",
+        "Department of Statistics & Computer Science"
+    ],
+    "FCMS": ["Department of Commerce", "Department of Finance", "Department of Marketing"],
+    "Arts": ["Department of Economics", "Department of English", "Department of History"],
+    "FCT": ["Department of ICT", "Department of Engineering Technology"]
+};
+
+const positions = [
+    "Lecturer",
+    "Senior Lecturer",
+    "Assistant Professor",
+    "Professor",
+    "Head of Department",
+    "Dean",
+    "Instructor",
+    "Demonstrator",
+    "Visiting Lecturer"
+];
+
 interface Teacher {
     id: string;
     teacherId: string;
@@ -183,20 +213,47 @@ const TeacherDetailsModal = ({ show, onHide, teacher, refreshTeachers }: { show:
                             <Row>
                                 <Col md={6}>
                                     <Form.Group className="mb-2">
-                                        <Form.Label>Position</Form.Label>
-                                        <Form.Control type="text" value={editData.position || ''} onChange={e => setEditData({...editData, position: e.target.value})} />
+                                        <Form.Label>Faculty</Form.Label>
+                                        <Form.Select 
+                                            value={editData.faculty || ''} 
+                                            onChange={e => {
+                                                const newFaculty = e.target.value;
+                                                setEditData(prev => ({
+                                                    ...prev, 
+                                                    faculty: newFaculty,
+                                                    department: '' // Reset department if faculty changes
+                                                }));
+                                            }}
+                                        >
+                                            {faculties.map(f => <option key={f} value={f}>{f}</option>)}
+                                        </Form.Select>
                                     </Form.Group>
                                 </Col>
                                 <Col md={6}>
                                     <Form.Group className="mb-2">
                                         <Form.Label>Department</Form.Label>
-                                        <Form.Control type="text" value={editData.department || ''} onChange={e => setEditData({...editData, department: e.target.value})} />
+                                        <Form.Select 
+                                            value={editData.department || ''} 
+                                            onChange={e => setEditData({...editData, department: e.target.value})}
+                                            disabled={!editData.faculty}
+                                        >
+                                            <option value="">Select Department</option>
+                                            {editData.faculty && facultyDepartments[editData.faculty]?.map(dept => (
+                                                <option key={dept} value={dept}>{dept}</option>
+                                            ))}
+                                        </Form.Select>
                                     </Form.Group>
                                 </Col>
                             </Row>
                              <Form.Group className="mb-3">
-                                <Form.Label>Faculty</Form.Label>
-                                <Form.Control type="text" value={editData.faculty || ''} onChange={e => setEditData({...editData, faculty: e.target.value})} />
+                                <Form.Label>Position</Form.Label>
+                                <Form.Select 
+                                    value={editData.position || ''} 
+                                    onChange={e => setEditData({...editData, position: e.target.value})}
+                                >
+                                    <option value="">Select Position</option>
+                                    {positions.map(p => <option key={p} value={p}>{p}</option>)}
+                                </Form.Select>
                             </Form.Group>
                             <Button variant="primary" type="submit">Update Details</Button>
                         </Form>
@@ -239,7 +296,6 @@ const TeacherDetailsModal = ({ show, onHide, teacher, refreshTeachers }: { show:
 };
 
 const TeacherManager = () => {
-    const faculties = ["Science", "FCMS", "Arts", "FCT"];
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(false);
     const [msg, setMsg] = useState({ type: '', content: '' });
@@ -264,34 +320,6 @@ const TeacherManager = () => {
 
     const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
     const [showModal, setShowModal] = useState(false);
-
-    // Data for Dropdowns
-    const facultyDepartments: { [key: string]: string[] } = {
-        "Science": [
-            "Department of Chemistry",
-            "Department of Industrial Management",
-            "Department of Mathematics",
-            "Department of Microbiology",
-            "Department of Physics and Electronics",
-            "Department of Plant and Molecular Biology",
-            "Department of Statistics & Computer Science"
-        ],
-        "FCMS": ["Department of Commerce", "Department of Finance", "Department of Marketing"],
-        "Arts": ["Department of Economics", "Department of English", "Department of History"],
-        "FCT": ["Department of ICT", "Department of Engineering Technology"]
-    };
-
-    const positions = [
-        "Lecturer",
-        "Senior Lecturer",
-        "Assistant Professor",
-        "Professor",
-        "Head of Department",
-        "Dean",
-        "Instructor",
-        "Demonstrator",
-        "Visiting Lecturer"
-    ];
 
     const openTeacherDetails = (teacher: Teacher) => {
         setSelectedTeacher(teacher);
@@ -359,16 +387,26 @@ const TeacherManager = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this teacher?")) return;
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
+
+    const handleDeleteClick = (id: string) => {
+        setTeacherToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!teacherToDelete) return;
         try {
-            await api.delete(`/api/admin/${id}`);
-            // Refresh current page
+            await api.delete(`/api/admin/${teacherToDelete}`);
             fetchTeachers();
             setMsg({ type: 'success', content: 'Teacher deleted successfully' });
         } catch (err) {
             console.error(err);
             setMsg({ type: 'danger', content: 'Failed to delete teacher' });
+        } finally {
+            setShowDeleteModal(false);
+            setTeacherToDelete(null);
         }
     };
 
@@ -501,7 +539,7 @@ const TeacherManager = () => {
                                                             <small className="text-muted">{teacher.faculty}</small>
                                                         </td>
                                                         <td>
-                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDelete(teacher.id)}>Delete</Button>
+                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteClick(teacher.id)}>Delete</Button>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -536,11 +574,27 @@ const TeacherManager = () => {
                 teacher={selectedTeacher} 
                 refreshTeachers={fetchTeachers} 
             />
+
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirm Delete</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Are you sure you want to delete this teacher? This action cannot be undone.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={confirmDelete}>
+                        Delete
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Row>
     );
 };
 
-const faculties = ["Science", "FCMS", "Arts", "FCT"];
 const scienceDegreePrograms = [
     "ECSC", "PE", "MIT", "Applied Chemistry",
     "PS", "BS", "ENCM", "SS", "SE",
@@ -1434,7 +1488,6 @@ interface Student {
 }
 
 const StudentManager = () => {
-    const faculties = ["Science", "FCMS", "Arts", "FCT"];
     const scienceDegreePrograms = [
         "ECSC", "PE", "MIT", "Applied Chemistry",
         "PS", "BS", "ENCM", "SS", "SE",
