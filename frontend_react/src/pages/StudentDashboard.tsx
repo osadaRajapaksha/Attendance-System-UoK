@@ -112,6 +112,7 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
+  // Called when user clicks enroll on a course; if a key is required open modal, otherwise enroll directly
   const handleEnrollClick = (course: Course) => {
       if (course.hasEnrollmentKey) {
           setSelectedCourse(course);
@@ -122,7 +123,8 @@ const StudentDashboard: React.FC = () => {
           submitEnrollment(course.id, null);
       }
   };
-
+  
+// Submit enrollment to API; accepts optional key
   const submitEnrollment = async (courseId: string, key: string | null) => {
     try {
       setError('');
@@ -138,14 +140,16 @@ const StudentDashboard: React.FC = () => {
       if (key) {
            setEnrollError(msg);
       } else {
-           setError(msg);
+           setError(msg); // show global error
       }
       console.error(err);
     }
   };
-
+  
+// Utility to check if current student is enrolled in a course
   const isEnrolled = (courseId: string) => enrolledCourseIds.includes(courseId);
-
+  
+// Archive a course for the student (PUT request) and update local UI state
   const handleArchiveCourse = async (courseId: string) => {
       try {
           await api.put(`/api/students/courses/${courseId}/archive`);
@@ -159,7 +163,8 @@ const StudentDashboard: React.FC = () => {
           alert("Failed to archive course");
       }
   };
-
+  
+// Unarchive a course and update local UI state
   const handleUnarchiveCourse = async (courseId: string) => {
       try {
           await api.put(`/api/students/courses/${courseId}/unarchive`);
