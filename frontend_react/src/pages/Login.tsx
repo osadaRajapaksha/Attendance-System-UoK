@@ -71,9 +71,9 @@ const Login: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
         setError('Invalid email or password');
+      } else {
+        setError('Network Error');
       }
     } finally {
       if (!showOtp) setLoading(false); // Only stop loading if not switching to OTP mode
