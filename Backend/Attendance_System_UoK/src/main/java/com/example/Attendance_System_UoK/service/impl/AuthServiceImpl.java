@@ -27,10 +27,12 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final com.example.Attendance_System_UoK.service.OtpService otpService;
     private final com.example.Attendance_System_UoK.util.DeviceTokenUtil deviceTokenUtil;
+    private final com.example.Attendance_System_UoK.service.UserService userService;
 
     // REGISTER ONLY STUDENTS
     @Override
-    public AuthResponse register(RegisterRequest request) {
+    public com.example.Attendance_System_UoK.dto.AuthResponse register(
+            com.example.Attendance_System_UoK.dto.RegisterRequest request) {
 
         if (studentRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
@@ -161,9 +163,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 2. Find User
-        com.example.Attendance_System_UoK.service.UserService userService = new com.example.Attendance_System_UoK.service.UserService(
-                studentRepository, teacherRepository, adminRepository, passwordEncoder);
-
         User user = userService.findUserByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with this email"));
 
