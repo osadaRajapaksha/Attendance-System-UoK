@@ -22,6 +22,20 @@ const Login: React.FC = () => {
     }
   }, [auth, navigate]);
 
+  // Restore OTP state on reload
+  useEffect(() => {
+    const otpPending = sessionStorage.getItem('otp_pending');
+    if (otpPending === 'true') {
+      const savedEmail = sessionStorage.getItem('email');
+      const savedPassword = sessionStorage.getItem('password');
+      if (savedEmail && savedPassword) {
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+        setShowOtp(true);
+      }
+    }
+  }, []);
+
   const [otp, setOtp] = useState('');
   const [showOtp, setShowOtp] = useState(false);
 
@@ -40,6 +54,10 @@ const Login: React.FC = () => {
       if (data.requiresTwoFactor) {
         setShowOtp(true);
         setLoading(false);
+        // Persist state for reload protection
+        sessionStorage.setItem('otp_pending', 'true');
+        sessionStorage.setItem('email', email);
+        sessionStorage.setItem('password', password);
         return;
       }
 
@@ -62,6 +80,11 @@ const Login: React.FC = () => {
         degreeProgram,
         faculty
       });
+
+      // Clear OTP state on successful login
+      sessionStorage.removeItem('otp_pending');
+      sessionStorage.removeItem('email');
+      sessionStorage.removeItem('password');
 
       if (role === 'ROLE_STUDENT') navigate('/student-dashboard');
       else if (role === 'ROLE_TEACHER') navigate('/teacher-dashboard');

@@ -41,6 +41,26 @@ const Register: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
 
+  // Restore state on load
+  React.useEffect(() => {
+    const savedOtpSent = sessionStorage.getItem('register_otpSent');
+    if (savedOtpSent === 'true') {
+      const savedFormData = sessionStorage.getItem('register_formData');
+      if (savedFormData) {
+        setFormData(JSON.parse(savedFormData));
+        setOtpSent(true);
+      }
+    }
+  }, []);
+
+  // Save state when it changes (if OTP is sent)
+  React.useEffect(() => {
+    if (otpSent) {
+      sessionStorage.setItem('register_otpSent', 'true');
+      sessionStorage.setItem('register_formData', JSON.stringify(formData));
+    }
+  }, [otpSent, formData]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -91,6 +111,11 @@ const Register: React.FC = () => {
     try {
       await api.post('/api/auth/register', formData);
       setSuccess('Registration successful! Redirecting to login...');
+      
+      // Clear storage
+      sessionStorage.removeItem('register_otpSent');
+      sessionStorage.removeItem('register_formData');
+      
       setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
       console.error(err);
