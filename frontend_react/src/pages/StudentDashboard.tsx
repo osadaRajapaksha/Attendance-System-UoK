@@ -27,6 +27,7 @@ const StudentDashboard: React.FC = () => {
   
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Fetch all courses from the backend
   const fetchCourses = async () => {
     try {
       const res = await api.get('/api/courses');
@@ -37,6 +38,7 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
+  // Fetch courses the student is enrolled in (expects array of courses)
   const fetchEnrolledCourses = async () => {
     try {
       const res = await api.get<Course[]>('/api/courses/enrolled');
@@ -45,7 +47,8 @@ const StudentDashboard: React.FC = () => {
       console.error(err);
     }
   };
-
+  
+// On mount: load both all courses and enrolled courses in parallel
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -62,7 +65,8 @@ const StudentDashboard: React.FC = () => {
   const [enrollError, setEnrollError] = useState('');
   
   const [currentTerm, setCurrentTerm] = useState('');
-
+  
+// Fetch system general settings to show current academic term (year + semester)
   useEffect(() => {
       api.get('/api/system/general').then(res => {
           if (res.data.academicYear && res.data.semester) {
@@ -71,14 +75,15 @@ const StudentDashboard: React.FC = () => {
       }).catch(err => console.error("Failed to fetch system settings", err));
   }, []);
 
-  // Account State
+  // Account State(Change Password modal)
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passMsg, setPassMsg] = useState('');
   const [passError, setPassError] = useState('');
-
+  
+// Handler to change password: validates and posts to API
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPassMsg('');
@@ -96,6 +101,7 @@ const StudentDashboard: React.FC = () => {
         confirmNewPassword: confirmPassword
       });
       setPassMsg("Password changed successfully");
+      // clear fields and close modal after a short delay
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -106,6 +112,7 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
+  // Called when user clicks enroll on a course; if a key is required open modal, otherwise enroll directly
   const handleEnrollClick = (course: Course) => {
       if (course.hasEnrollmentKey) {
           setSelectedCourse(course);
@@ -116,7 +123,8 @@ const StudentDashboard: React.FC = () => {
           submitEnrollment(course.id, null);
       }
   };
-
+  
+// Submit enrollment to API; accepts optional key
   const submitEnrollment = async (courseId: string, key: string | null) => {
     try {
       setError('');
@@ -132,14 +140,16 @@ const StudentDashboard: React.FC = () => {
       if (key) {
            setEnrollError(msg);
       } else {
-           setError(msg);
+           setError(msg); // show global error
       }
       console.error(err);
     }
   };
-
+  
+// Utility to check if current student is enrolled in a course
   const isEnrolled = (courseId: string) => enrolledCourseIds.includes(courseId);
-
+  
+// Archive a course for the student (PUT request) and update local UI state
   const handleArchiveCourse = async (courseId: string) => {
       try {
           await api.put(`/api/students/courses/${courseId}/archive`);
@@ -153,7 +163,8 @@ const StudentDashboard: React.FC = () => {
           alert("Failed to archive course");
       }
   };
-
+  
+// Unarchive a course and update local UI state
   const handleUnarchiveCourse = async (courseId: string) => {
       try {
           await api.put(`/api/students/courses/${courseId}/unarchive`);
