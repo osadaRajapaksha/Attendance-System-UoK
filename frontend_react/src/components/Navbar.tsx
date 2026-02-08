@@ -15,12 +15,12 @@ const NavBar: React.FC = () => {
 
   return (
     <Navbar expand="lg" className="mb-4 navbar-glass sticky-top">
-      <Container>
+      <Container fluid>
         <Navbar.Brand as={Link} to="/">
           <img
             src={uokLogo}
             alt="Attendance System"
-            style={{ height: '40px', width: 'auto' }}
+            style={{ height: '55px', width: 'auto' }}
           />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
