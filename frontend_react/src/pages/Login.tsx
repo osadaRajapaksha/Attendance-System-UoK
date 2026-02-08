@@ -86,9 +86,14 @@ const Login: React.FC = () => {
 
       <Card style={{ width: '100%', maxWidth: '500px' }} className="shadow">
         <Card.Body>
-          <div className="text-center mb-4">
-            <img src={uokLogo} alt="University Logo" style={{ maxWidth: '400px', height: 'auto' }} />
-          </div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+  <img
+    src={uokLogo}
+    alt="University Logo"
+    style={{ maxWidth: '400px', height: 'auto' }}
+  />
+</div>
+
           {error && <Alert variant="danger">{error}</Alert>}
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-4" controlId="formBasicEmail">

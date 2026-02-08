@@ -175,7 +175,7 @@ const StudentDashboard: React.FC = () => {
         <Card className="course-card h-100">
           <Card.Body className="d-flex flex-column">
             <div className="d-flex justify-content-between align-items-start mb-2">
-              <Badge bg="info" className="p-2">{course.code}</Badge>
+              <Badge bg="primary" className="p-2">{course.code}</Badge>
               <div className="d-flex align-items-center gap-2">
                   {enrolled ? <Badge bg="success">Enrolled</Badge> : <Badge bg="secondary">Not Enrolled</Badge>}
                   {enrolled && (
@@ -200,7 +200,7 @@ const StudentDashboard: React.FC = () => {
                  {course.teacherName}
             </Card.Subtitle>
             {course.academicYear && course.semester && (
-                <div className="mb-3 small text-info">
+                <div className="mb-3 small text-dark">
                     <i className="bi bi-calendar-event me-1"></i>
                     {course.academicYear} - {course.semester}
                 </div>
@@ -214,7 +214,7 @@ const StudentDashboard: React.FC = () => {
                   Enroll Now
                 </Button>
               ) : (
-                <Button variant="outline-success" className="w-100" as={Link} to={`/student/course/${course.id}`}>
+                <Button variant="success" className="w-100" as={Link} to={`/student/course/${course.id}`}>
                   Go to Course
                 </Button>
               )}
@@ -230,7 +230,7 @@ const StudentDashboard: React.FC = () => {
        <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 className="page-title mb-0">Student Dashboard</h2>
-            {currentTerm && <Badge bg="info" className="text-dark mt-2">{currentTerm}</Badge>}
+            {currentTerm && <Badge bg="primary" className="text-white mt-2">{currentTerm}</Badge>}
         </div>
       </div>
       {error && <Alert variant="danger">{error}</Alert>}

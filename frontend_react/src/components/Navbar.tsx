@@ -26,15 +26,15 @@ const NavBar: React.FC = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            {auth?.user?.role === 'ROLE_STUDENT' && <Nav.Link as={Link} to="/student-dashboard">Dashboard</Nav.Link>}
-            {auth?.user?.role === 'ROLE_TEACHER' && <Nav.Link as={Link} to="/teacher-dashboard">Dashboard</Nav.Link>}
-            {auth?.user?.role === 'ROLE_ADMIN' && <Nav.Link as={Link} to="/admin-dashboard">Dashboard</Nav.Link>}
+            {auth?.user?.role === 'ROLE_STUDENT' && <Nav.Link as={Link} to="/student-dashboard"></Nav.Link>}
+            {auth?.user?.role === 'ROLE_TEACHER' && <Nav.Link as={Link} to="/teacher-dashboard"></Nav.Link>}
+            {auth?.user?.role === 'ROLE_ADMIN' && <Nav.Link as={Link} to="/admin-dashboard"></Nav.Link>}
           </Nav>
           <Nav>
             {auth?.isAuthenticated ? (
               <div className="d-flex align-items-center gap-3">
                 <span className="text-muted">Hello, {auth.user?.fullName}</span>
-                <Button variant="outline-danger" onClick={handleLogout}>Logout</Button>
+                <Button /*variant="outline-danger"*/ onClick={handleLogout}>Logout</Button>
               </div>
             ) : (
               <Nav.Link as={Link} to="/login">Login</Nav.Link>
