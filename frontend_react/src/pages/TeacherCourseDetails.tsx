@@ -363,7 +363,9 @@ const TeacherCourseDetails: React.FC = () => {
                 <Tab eventKey="sessions" title="Sessions">
                     <Tabs defaultActiveKey="active" id="session-status-tabs" className="mb-3">
                         {['ACTIVE', 'SCHEDULED', 'EXPIRED', 'DELETED'].map((status) => {
-                            const filteredSessions = sessions.filter((s: any) => s.status === status);
+                            const filteredSessions = sessions
+                                .filter((s: any) => s.status === status)
+                                .sort((a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
                             return (
                                 <Tab eventKey={status.toLowerCase()} title={`${status.charAt(0) + status.slice(1).toLowerCase()} (${filteredSessions.length})`}>
                                     {filteredSessions.length === 0 ? <p className="text-muted">No {status.toLowerCase()} sessions.</p> : (

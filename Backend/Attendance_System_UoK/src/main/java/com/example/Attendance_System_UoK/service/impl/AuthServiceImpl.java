@@ -144,15 +144,25 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtUtil.generateToken(user);
         String deviceToken = deviceTokenUtil.encrypt(user.getId());
 
-        return new AuthResponse(
-                token,
-                deviceToken,
-                user.getEmail(),
-                user.getFullName(),
-                user.getRole(),
-                user instanceof Student ? ((Student) user).getStudentId() : null,
-                user instanceof Student ? ((Student) user).getDegreeProgram() : null,
-                user.getFaculty());
+        AuthResponse response = new AuthResponse();
+        response.setToken(token);
+        response.setDeviceToken(deviceToken);
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setRole(user.getRole());
+        response.setId(user.getId());
+        response.setFaculty(user.getFaculty());
+
+        if (user instanceof Student) {
+            response.setStudentId(((Student) user).getStudentId());
+            response.setDegreeProgram(((Student) user).getDegreeProgram());
+        } else if (user instanceof Teacher) {
+            response.setTeacherId(((Teacher) user).getTeacherId());
+        } else if (user instanceof Admin) {
+            response.setAdminId(((Admin) user).getAdminId());
+        }
+
+        return response;
     }
 
     @Override

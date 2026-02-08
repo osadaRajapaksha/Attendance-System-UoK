@@ -198,7 +198,10 @@ const StudentCourseDetails: React.FC = () => {
         );
     };
 
-    const categorizeSessions = (status: string) => sessions.filter(s => s.status === status);
+    const categorizeSessions = (status: string) => 
+        sessions
+            .filter(s => s.status === status)
+            .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
     const getButtonLabel = (session: Session) => {
         if (markingSessionId === session.id) return 'Marking...';
