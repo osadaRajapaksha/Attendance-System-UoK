@@ -387,16 +387,26 @@ const TeacherManager = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this teacher?")) return;
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
+
+    const handleDeleteClick = (id: string) => {
+        setTeacherToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!teacherToDelete) return;
         try {
-            await api.delete(`/api/admin/${id}`);
-            // Refresh current page
+            await api.delete(`/api/admin/${teacherToDelete}`);
             fetchTeachers();
             setMsg({ type: 'success', content: 'Teacher deleted successfully' });
         } catch (err) {
             console.error(err);
             setMsg({ type: 'danger', content: 'Failed to delete teacher' });
+        } finally {
+            setShowDeleteModal(false);
+            setTeacherToDelete(null);
         }
     };
 
@@ -529,7 +539,7 @@ const TeacherManager = () => {
                                                             <small className="text-muted">{teacher.faculty}</small>
                                                         </td>
                                                         <td>
-                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDelete(teacher.id)}>Delete</Button>
+                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteClick(teacher.id)}>Delete</Button>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -564,6 +574,23 @@ const TeacherManager = () => {
                 teacher={selectedTeacher} 
                 refreshTeachers={fetchTeachers} 
             />
+
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirm Delete</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Are you sure you want to delete this teacher? This action cannot be undone.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={confirmDelete}>
+                        Delete
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Row>
     );
 };
