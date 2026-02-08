@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080', // Adjust if backend runs on different port
+  baseURL: 'https://api.attendancesystemuok.me', // Adjust if backend runs on different port
 });
 
 api.interceptors.request.use(
