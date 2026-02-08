@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Navbar, Container, Nav, Button } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import uokLogo from '../assets/Attendance_system_uok.png';
 
 const NavBar: React.FC = () => {
   const auth = useContext(AuthContext);
@@ -15,7 +16,13 @@ const NavBar: React.FC = () => {
   return (
     <Navbar expand="lg" className="mb-4 navbar-glass sticky-top">
       <Container>
-        <Navbar.Brand as={Link} to="/">Attendance System</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/">
+          <img
+            src={uokLogo}
+            alt="Attendance System"
+            style={{ height: '40px', width: 'auto' }}
+          />
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
@@ -25,10 +32,10 @@ const NavBar: React.FC = () => {
           </Nav>
           <Nav>
             {auth?.isAuthenticated ? (
-               <div className="d-flex align-items-center gap-3">
-                  <span className="text-muted">Hello, {auth.user?.fullName}</span>
-                  <Button variant="outline-danger" onClick={handleLogout}>Logout</Button>
-               </div>
+              <div className="d-flex align-items-center gap-3">
+                <span className="text-muted">Hello, {auth.user?.fullName}</span>
+                <Button variant="outline-danger" onClick={handleLogout}>Logout</Button>
+              </div>
             ) : (
               <Nav.Link as={Link} to="/login">Login</Nav.Link>
             )}

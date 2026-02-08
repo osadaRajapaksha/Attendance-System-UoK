@@ -21,8 +21,8 @@ const Register: React.FC = () => {
 
   const faculties = ["Science", "FCMS", "Arts", "FCT"];
   const scienceDegreePrograms = [
-    "ECSC", "PE", "MIT", "Applied Chemistry",
-    "PS", "BS", "ENCM", "SS", "SE",
+    "Electronics and Computer Science", "Physics and Electronics", "Management and Information Technology", "Applied Chemistry",
+    "Physical Science", "Bio Science", "Environmental and Conservation Management", "Sport Science", "Software Engineering",
   ];
 
   const [formData, setFormData] = useState({

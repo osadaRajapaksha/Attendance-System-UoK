@@ -125,7 +125,7 @@ const ForgotPassword = () => {
                     )}
 
                     <div className="text-center mt-3">
-                        <Link to="/login" className="custom-link">Back toLogin</Link>
+                        <Link to="/login" className="custom-link">Back to Login</Link>
                     </div>
                 </Card.Body>
             </Card>
