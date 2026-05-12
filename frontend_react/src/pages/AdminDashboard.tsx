@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Button, Form, Alert, Card, Tabs, Tab, Table, Badge, Row, Col, Spinner, InputGroup, Pagination, Modal, ListGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'exceljs';
 import DashboardStats from './DashboardStats';
 
 const AdminDashboard: React.FC = () => {

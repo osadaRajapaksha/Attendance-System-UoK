@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Container, Form, Button, Alert, Spinner, Row, Col } from 'react-bootstrap';
+import { Container, Form, Button, Alert, Spinner, Row, Col, Modal } from 'react-bootstrap';
 import { GoogleMap, useJsApiLoader, DrawingManager } from '@react-google-maps/api';
 import api from '../api/axios';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -192,8 +192,29 @@ const TeacherSessionCreate: React.FC = () => {
   return isLoaded ? (
       <Container className="mt-4">
           <h2>Create Session</h2>
-          {error && <Alert variant="danger">{error}</Alert>}
-          {success && <Alert variant="success">{success}</Alert>}
+          <Modal show={!!success} onHide={() => setSuccess('')} centered>
+              <Modal.Header closeButton>
+                  <Modal.Title className="text-success">Success</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>{success}</Modal.Body>
+              <Modal.Footer>
+                  <Button variant="success" onClick={() => setSuccess('')}>
+                      OK
+                  </Button>
+              </Modal.Footer>
+          </Modal>
+
+          <Modal show={!!error} onHide={() => setError('')} centered>
+              <Modal.Header closeButton>
+                  <Modal.Title className="text-danger">Error</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>{error}</Modal.Body>
+              <Modal.Footer>
+                  <Button variant="secondary" onClick={() => setError('')}>
+                      Close
+                  </Button>
+              </Modal.Footer>
+          </Modal>
           
           <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-3">
