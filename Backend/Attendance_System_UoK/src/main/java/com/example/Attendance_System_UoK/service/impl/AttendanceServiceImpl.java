@@ -90,6 +90,10 @@ public class AttendanceServiceImpl implements AttendanceService {
         if (attendance.getId() == null) {
             attendance.setSessionId(sessionId);
             attendance.setStudentId(studentId);
+            com.example.Attendance_System_UoK.model.Session session = sessionRepository.findById(sessionId).orElse(null);
+            if (session != null) {
+                attendance.setCourseId(session.getCourseId());
+            }
             attendance.setCheckInTimes(new java.util.ArrayList<>());
         }
 
@@ -136,13 +140,15 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .filter(s -> s.getStatus() != com.example.Attendance_System_UoK.model.SessionStatus.DELETED)
                 .collect(Collectors.toList());
 
-        // 3. Pre-fetch all attendance for these sessions (optimization possible, but
-        // simple for now)
-        // We will query per student or fetch all and filter in memory.
-        // Given MongoDB, let's fetch by sessionId IN [...] list
-        List<String> sessionIds = sessions.stream().map(com.example.Attendance_System_UoK.model.Session::getId)
-                .collect(Collectors.toList());
-        List<Attendance> allAttendance = attendanceRepository.findBySessionIdIn(sessionIds);
+        // 3. Pre-fetch all attendance for the course
+        List<Attendance> allAttendance = attendanceRepository.findByCourseId(courseId);
+        
+        // Fallback for legacy records that don't have courseId populated yet
+        if (allAttendance.isEmpty() && !sessions.isEmpty()) {
+            List<String> sessionIds = sessions.stream().map(com.example.Attendance_System_UoK.model.Session::getId)
+                    .collect(Collectors.toList());
+            allAttendance = attendanceRepository.findBySessionIdIn(sessionIds);
+        }
 
         // Map: StudentID -> SessionID -> Status
         java.util.Map<String, java.util.Map<String, String>> studentSessionStatus = new java.util.HashMap<>();

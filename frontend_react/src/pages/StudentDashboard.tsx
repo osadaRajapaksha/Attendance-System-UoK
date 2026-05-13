@@ -179,62 +179,7 @@ const StudentDashboard: React.FC = () => {
       }
   };
 
-  const CourseCard = ({ course }: { course: Course }) => {
-    const enrolled = isEnrolled(course.id);
-    return (
-      <Col md={4} lg={3} className="mb-4">
-        <Card className="course-card h-100">
-          <Card.Body className="d-flex flex-column">
-            <div className="d-flex justify-content-between align-items-start mb-2">
-              <Badge bg="primary" className="p-2">{course.code}</Badge>
-              <div className="d-flex align-items-center gap-2">
-                  {enrolled ? <Badge bg="success">Enrolled</Badge> : <Badge bg="secondary">Not Enrolled</Badge>}
-                  {enrolled && (
-                      <Dropdown align="end">
-                          <Dropdown.Toggle variant="link" bsPrefix="p-0" style={{ color: 'black', textDecoration: 'none' }}>
-                              <i className="bi bi-three-dots-vertical" style={{ color: 'black' }}></i>
-                          </Dropdown.Toggle>
-                          <Dropdown.Menu>
-                              {!course.isArchived ? (
-                                  <Dropdown.Item onClick={() => handleArchiveCourse(course.id)}>Archive</Dropdown.Item>
-                              ) : (
-                                  <Dropdown.Item onClick={() => handleUnarchiveCourse(course.id)}>Unarchive</Dropdown.Item>
-                              )}
-                          </Dropdown.Menu>
-                      </Dropdown>
-                  )}
-              </div>
-            </div>
-            <Card.Title className="mt-2 text-truncate" title={course.name}>{course.name}</Card.Title>
-            <Card.Subtitle className="mb-2 text-muted small">
-                 <i className="bi bi-person-fill me-1"></i>
-                 {course.teacherName}
-            </Card.Subtitle>
-            {course.academicYear && course.semester && (
-                <div className="mb-3 small text-dark">
-                    <i className="bi bi-calendar-event me-1"></i>
-                    {course.academicYear} - {course.semester}
-                </div>
-            )}
-            <Card.Text className="text-muted flex-grow-1">
-              Explore the content of {course.name}.
-            </Card.Text>
-            <div className="mt-3">
-              {!enrolled ? (
-                <Button variant="primary" className="w-100" onClick={() => handleEnrollClick(course)}>
-                  Enroll Now
-                </Button>
-              ) : (
-                <Button variant="success" className="w-100" as={Link} to={`/student/course/${course.id}`}>
-                  Go to Course
-                </Button>
-              )}
-            </div>
-          </Card.Body>
-        </Card>
-      </Col>
-    );
-  };
+
 
   return (
     <Container className="mt-5">
@@ -265,7 +210,14 @@ const StudentDashboard: React.FC = () => {
                   c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                   c.code.toLowerCase().includes(searchQuery.toLowerCase())
               ).map(course => (
-                <CourseCard key={course.id} course={course} />
+                        <CourseCard 
+                            key={course.id} 
+                            course={course} 
+                            isEnrolled={isEnrolled(course.id)}
+                            onArchive={() => handleArchiveCourse(course.id)}
+                            onUnarchive={() => handleUnarchiveCourse(course.id)}
+                            onEnrollClick={() => handleEnrollClick(course)}
+                        />
               ))}
               {courses.filter(c => 
                   c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -278,7 +230,14 @@ const StudentDashboard: React.FC = () => {
                  <Tab eventKey="active" title="Active">
                      <Row className="g-4 mt-2">
                       {courses.filter(c => isEnrolled(c.id) && !c.isArchived).map(course => (
-                        <CourseCard key={course.id} course={course} />
+                                <CourseCard 
+                            key={course.id} 
+                            course={course} 
+                            isEnrolled={isEnrolled(course.id)}
+                            onArchive={() => handleArchiveCourse(course.id)}
+                            onUnarchive={() => handleUnarchiveCourse(course.id)}
+                            onEnrollClick={() => handleEnrollClick(course)}
+                        />
                       ))}
                       {courses.filter(c => isEnrolled(c.id) && !c.isArchived).length === 0 && (
                          <Col xs={12} className="text-center mt-5">
@@ -290,7 +249,14 @@ const StudentDashboard: React.FC = () => {
                  <Tab eventKey="archived" title="Archived">
                      <Row className="g-4 mt-2">
                       {courses.filter(c => isEnrolled(c.id) && c.isArchived).map(course => (
-                        <CourseCard key={course.id} course={course} />
+                                <CourseCard 
+                            key={course.id} 
+                            course={course} 
+                            isEnrolled={isEnrolled(course.id)}
+                            onArchive={() => handleArchiveCourse(course.id)}
+                            onUnarchive={() => handleUnarchiveCourse(course.id)}
+                            onEnrollClick={() => handleEnrollClick(course)}
+                        />
                       ))}
                       {courses.filter(c => isEnrolled(c.id) && c.isArchived).length === 0 && (
                          <Col xs={12} className="text-center mt-5">
@@ -416,6 +382,74 @@ const StudentDashboard: React.FC = () => {
         </Modal.Footer>
       </Modal>
     </Container>
+  );
+};
+
+const CourseCard = ({ 
+  course, 
+  isEnrolled, 
+  onArchive, 
+  onUnarchive, 
+  onEnrollClick 
+}: { 
+  course: Course, 
+  isEnrolled: boolean, 
+  onArchive: () => void, 
+  onUnarchive: () => void, 
+  onEnrollClick: () => void 
+}) => {
+  return (
+    <Col md={4} lg={3} className="mb-4">
+      <Card className="course-card h-100">
+        <Card.Body className="d-flex flex-column">
+          <div className="d-flex justify-content-between align-items-start mb-2">
+            <Badge bg="primary" className="p-2">{course.code}</Badge>
+            <div className="d-flex align-items-center gap-2">
+                {isEnrolled ? <Badge bg="success">Enrolled</Badge> : <Badge bg="secondary">Not Enrolled</Badge>}
+                {isEnrolled && (
+                    <Dropdown align="end">
+                        <Dropdown.Toggle variant="link" bsPrefix="p-0" style={{ color: 'black', textDecoration: 'none' }}>
+                            <i className="bi bi-three-dots-vertical" style={{ color: 'black' }}></i>
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu>
+                            {!course.isArchived ? (
+                                <Dropdown.Item onClick={onArchive}>Archive</Dropdown.Item>
+                            ) : (
+                                <Dropdown.Item onClick={onUnarchive}>Unarchive</Dropdown.Item>
+                            )}
+                        </Dropdown.Menu>
+                    </Dropdown>
+                )}
+            </div>
+          </div>
+          <Card.Title className="mt-2 text-truncate" title={course.name}>{course.name}</Card.Title>
+          <Card.Subtitle className="mb-2 text-muted small">
+               <i className="bi bi-person-fill me-1"></i>
+               {course.teacherName}
+          </Card.Subtitle>
+          {course.academicYear && course.semester && (
+              <div className="mb-3 small text-dark">
+                  <i className="bi bi-calendar-event me-1"></i>
+                  {course.academicYear} - {course.semester}
+              </div>
+          )}
+          <Card.Text className="text-muted flex-grow-1">
+            Explore the content of {course.name}.
+          </Card.Text>
+          <div className="mt-3">
+            {!isEnrolled ? (
+              <Button variant="primary" className="w-100" onClick={onEnrollClick}>
+                Enroll Now
+              </Button>
+            ) : (
+              <Button variant="success" className="w-100" as={Link} to={`/student/course/${course.id}`}>
+                Go to Course
+              </Button>
+            )}
+          </div>
+        </Card.Body>
+      </Card>
+    </Col>
   );
 };
 

@@ -80,7 +80,7 @@ public class CourseController {
             Teacher teacher = teacherRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-            if (!course.getTeacherId().equals(teacher.getId())) {
+            if (course.getTeacherIds() == null || !course.getTeacherIds().contains(teacher.getId())) {
                 throw new RuntimeException("You are not the teacher of this course");
             }
             // For teacher, we MUST use the path variable studentId to know WHO to remove

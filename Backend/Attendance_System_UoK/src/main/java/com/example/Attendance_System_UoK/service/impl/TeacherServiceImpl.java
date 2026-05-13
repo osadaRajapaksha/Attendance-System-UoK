@@ -133,6 +133,6 @@ public class TeacherServiceImpl implements TeacherService {
         // but CourseRepository.findByTeacherId likely expects the database ID of the
         // teacher user.
         // Let's assume teacherId in Course is the User ID.
-        return courseRepository.findByTeacherId(teacherId);
+        return courseRepository.findByTeacherIdsContainingOrTeacherId(teacherId, teacherId);
     }
 }

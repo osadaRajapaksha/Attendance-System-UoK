@@ -88,6 +88,40 @@ const TeacherSessionCreate: React.FC = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     
+    // Saved Locations
+    const [savedLocations, setSavedLocations] = useState<any[]>([]);
+    const [selectedLocationId, setSelectedLocationId] = useState<string>('');
+    
+    // Modal State
+    const [showAddLocationModal, setShowAddLocationModal] = useState(false);
+    const [saveLocationName, setSaveLocationName] = useState('');
+    const [modalBoundary, setModalBoundary] = useState<{lat: number, lng: number}[]>([]);
+
+    React.useEffect(() => {
+        api.get('/api/locations').then(res => {
+            setSavedLocations(res.data);
+        }).catch(err => console.error("Failed to fetch saved locations", err));
+    }, []);
+
+    const handleDeleteLocation = async () => {
+        if (!selectedLocationId) return;
+        if (!window.confirm("Are you sure you want to delete this location?")) return;
+        
+        try {
+            await api.delete(`/api/locations/${selectedLocationId}`);
+            setSavedLocations(savedLocations.filter(loc => loc.id !== selectedLocationId));
+            setSelectedLocationId('');
+            setBoundary([]);
+            setSuccess("Location deleted successfully!");
+            if (rectRef.current) {
+                rectRef.current.setMap(null);
+            }
+        } catch (err: any) {
+            console.error(err);
+            setError("Failed to delete location.");
+        }
+    };
+    
     const navigate = useNavigate();
 
     // Fetch user location on mount
@@ -114,8 +148,74 @@ const TeacherSessionCreate: React.FC = () => {
         libraries: ['drawing', 'geometry']
     });
 
-    const [map, setMap] = React.useState(null);
+    const [map, setMap] = React.useState<any>(null);
     const rectRef = useRef<any>(null);
+
+    const handleSelectLocation = (id: string, locations = savedLocations) => {
+        setSelectedLocationId(id);
+        const loc = locations.find(l => l.id === id);
+        if (loc) {
+            setBoundary(loc.boundary);
+            if (loc.boundary && loc.boundary.length > 0) {
+                setMapCenter({ lat: loc.boundary[0].lat, lng: loc.boundary[0].lng });
+            }
+            
+            if (map && window.google) {
+                if (rectRef.current) {
+                    rectRef.current.setMap(null);
+                }
+                const polygon = new window.google.maps.Polygon({
+                    paths: loc.boundary,
+                    editable: false,
+                    draggable: false,
+                    fillColor: '#0d6efd',
+                    fillOpacity: 0.35,
+                    strokeColor: '#0d6efd',
+                    strokeWeight: 2,
+                    map: map
+                });
+                
+                rectRef.current = polygon;
+                
+                const bounds = new window.google.maps.LatLngBounds();
+                loc.boundary.forEach((p: any) => bounds.extend(new window.google.maps.LatLng(p.lat, p.lng)));
+                map.fitBounds(bounds);
+            }
+        } else {
+            setBoundary([]);
+            if (rectRef.current) {
+                rectRef.current.setMap(null);
+            }
+        }
+    };
+
+    const handleSaveLocation = async () => {
+        if (modalBoundary.length !== 4) {
+            setError("Please draw an area on the map first.");
+            return;
+        }
+        if (!saveLocationName) {
+            setError("Please provide a name for the location.");
+            return;
+        }
+        try {
+            const res = await api.post('/api/locations/create', {
+                name: saveLocationName,
+                boundary: modalBoundary
+            });
+            const newLocations = [...savedLocations, res.data];
+            setSavedLocations(newLocations);
+            setSuccess("Location saved successfully!");
+            setSaveLocationName('');
+            setModalBoundary([]);
+            setShowAddLocationModal(false);
+            
+            handleSelectLocation(res.data.id, newLocations);
+        } catch (err: any) {
+            console.error(err);
+            setError("Failed to save location.");
+        }
+    };
 
     const onLoad = useCallback(function callback(map: any) {
         setMap(map);
@@ -125,25 +225,19 @@ const TeacherSessionCreate: React.FC = () => {
         setMap(null);
     }, []);
 
-    const onRectangleComplete = (rect: any) => {
+    const onModalRectangleComplete = (rect: any) => {
         const bounds = rect.getBounds();
         const ne = bounds.getNorthEast();
         const sw = bounds.getSouthWest();
         
-        // Convert bounds to 4 corners
         const corners = [
-            { lat: ne.lat(), lng: ne.lng() }, // NE
-            { lat: sw.lat(), lng: ne.lng() }, // SE
-            { lat: sw.lat(), lng: sw.lng() }, // SW
-            { lat: ne.lat(), lng: sw.lng() }  // NW
+            { lat: ne.lat(), lng: ne.lng() }, 
+            { lat: sw.lat(), lng: ne.lng() }, 
+            { lat: sw.lat(), lng: sw.lng() }, 
+            { lat: ne.lat(), lng: sw.lng() }  
         ];
         
-        setBoundary(corners);
-        
-        if (rectRef.current) {
-            rectRef.current.setMap(null);
-        }
-        rectRef.current = rect;
+        setModalBoundary(corners);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -152,7 +246,7 @@ const TeacherSessionCreate: React.FC = () => {
         setSuccess('');
 
         if (boundary.length !== 4) {
-            setError("Please draw a valid area (Square/Rectangle) on the map.");
+            setError("Please select a valid location for the session.");
             return;
         }
 
@@ -213,6 +307,53 @@ const TeacherSessionCreate: React.FC = () => {
                   <Button variant="secondary" onClick={() => setError('')}>
                       Close
                   </Button>
+              </Modal.Footer>
+          </Modal>
+
+          <Modal show={showAddLocationModal} onHide={() => setShowAddLocationModal(false)} size="lg" centered>
+              <Modal.Header closeButton>
+                  <Modal.Title>Add New Location</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                  <Form.Group className="mb-3">
+                      <Form.Label>Location Name</Form.Label>
+                      <Form.Control 
+                          type="text" 
+                          placeholder="e.g. Science Lab 1" 
+                          value={saveLocationName}
+                          onChange={(e) => setSaveLocationName(e.target.value)}
+                      />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                      <Form.Label>Draw Area (Rectangle)</Form.Label>
+                      <div className="border p-1 rounded">
+                          <GoogleMap
+                            mapContainerStyle={{ width: '100%', height: '350px' }}
+                            center={mapCenter}
+                            zoom={15}
+                          >
+                             <DrawingManager
+                                onRectangleComplete={onModalRectangleComplete}
+                                options={{
+                                    drawingControl: true,
+                                    drawingControlOptions: {
+                                        drawingModes: ['rectangle' as any],
+                                        position: window.google?.maps?.ControlPosition?.TOP_CENTER
+                                    },
+                                    rectangleOptions: {
+                                        editable: true,
+                                        draggable: true
+                                    }
+                                }}
+                             />
+                          </GoogleMap>
+                      </div>
+                      <Form.Text className="text-muted mt-1">Draw a square/rectangle shape to define the boundaries.</Form.Text>
+                  </Form.Group>
+              </Modal.Body>
+              <Modal.Footer>
+                  <Button variant="secondary" onClick={() => setShowAddLocationModal(false)}>Cancel</Button>
+                  <Button variant="primary" onClick={handleSaveLocation}>Save Location</Button>
               </Modal.Footer>
           </Modal>
           
@@ -311,29 +452,40 @@ const TeacherSessionCreate: React.FC = () => {
               </Row>
 
               <Form.Group className="mb-3">
-                  <Form.Label>Draw Session Area (Rectangle)</Form.Label>
-                  <GoogleMap
-                    mapContainerStyle={containerStyle}
-                    center={mapCenter}
-                    zoom={15}
-                    onLoad={onLoad}
-                    onUnmount={onUnmount}
-                  >
-                     <DrawingManager
-                        onRectangleComplete={onRectangleComplete}
-                        options={{
-                            drawingControl: true,
-                            drawingControlOptions: {
-                                drawingModes: ['rectangle' as any]
-                            },
-                            rectangleOptions: {
-                                editable: true,
-                                draggable: true
-                            }
-                        }}
-                     />
-                  </GoogleMap>
-                  <Form.Text>Draw a square/rectangle shape around the classroom area.</Form.Text>
+                  <Form.Label>Classroom Location Area</Form.Label>
+                  <Row className="mb-2">
+                      <Col md={7}>
+                          <Form.Select 
+                              value={selectedLocationId} 
+                              onChange={(e) => handleSelectLocation(e.target.value)}
+                          >
+                              <option value="">-- Select a Saved Location --</option>
+                              {savedLocations.map(loc => (
+                                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                              ))}
+                          </Form.Select>
+                      </Col>
+                      <Col md={5} className="d-flex gap-2">
+                          <Button variant="primary" onClick={() => setShowAddLocationModal(true)}>+ Add Location</Button>
+                          {selectedLocationId && (
+                              <Button variant="danger" onClick={handleDeleteLocation}>Delete</Button>
+                          )}
+                      </Col>
+                  </Row>
+                  <div className="border rounded p-1 mb-2">
+                      <GoogleMap
+                        mapContainerStyle={containerStyle}
+                        center={mapCenter}
+                        zoom={15}
+                        onLoad={onLoad}
+                        onUnmount={onUnmount}
+                      >
+                         {/* Location preview shown here via Polygon drawn dynamically */}
+                      </GoogleMap>
+                  </div>
+                  {!selectedLocationId && (
+                      <Form.Text className="text-danger">Please select a location for the session.</Form.Text>
+                  )}
               </Form.Group>
 
               <Button type="submit" disabled={loading}>

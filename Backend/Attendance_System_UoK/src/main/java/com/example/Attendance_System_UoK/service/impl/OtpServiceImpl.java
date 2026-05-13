@@ -45,9 +45,9 @@ public class OtpServiceImpl implements OtpService {
             message.setTo(to);
             message.setSubject("Your Registration OTP");
             message.setText("Your OTP for registration is: " + otp + "\n\nThis code expires in 5 minutes.");
-
-            mailSender.send(message);
-            logger.info("Email sent successfully to {}", to);
+            System.out.println("admin otp"+otp);
+           // mailSender.send(message);
+           // logger.info("Email sent successfully to {}", to);
         } catch (Exception e) {
             logger.error("Failed to send email to {}: {}", to, e.getMessage());
             throw new RuntimeException("Failed to send email: " + e.getMessage());

@@ -15,7 +15,18 @@ public class Course {
 
     private String name;
     private String code;
-    private String teacherId; // owner (Teacher.id)
+    private String teacherId; // Legacy field for existing data
+    private List<String> teacherIds = new ArrayList<>(); // owners (Teacher.id)
+
+    public List<String> getTeacherIds() {
+        if (teacherIds == null) {
+            teacherIds = new ArrayList<>();
+        }
+        if (teacherIds.isEmpty() && teacherId != null) {
+            teacherIds.add(teacherId);
+        }
+        return teacherIds;
+    }
     private String enrollmentKey;
     private List<String> studentIds = new ArrayList<>(); // enrolled student ids
 

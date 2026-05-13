@@ -109,41 +109,7 @@ const TeacherDashboard: React.FC = () => {
       }
   };
 
-  const CourseCard = ({ course }: { course: Course }) => {
-     return (
-        <Col md={4} lg={3} className="mb-4">
-           <Card className={`course-card h-100 border-0 shadow-sm ${course.archived ? 'bg-light text-muted' : ''}`}>
-              <Card.Body className="d-flex flex-column">
-                 <div className="d-flex justify-content-between align-items-center mb-3">
-                    <Badge bg={course.archived ? "secondary" : "primary"} className="p-2 fs-6">{course.code}</Badge>
-                    {course.archived && <Badge bg="warning" text="dark">Archived</Badge>}
-                 </div>
-                 <Card.Title className="fw-bold fs-5 mb-2">{course.name}</Card.Title>
-                 {course.academicYear && course.semester && (
-                    <div className="mb-3 small text-muted">
-                        <i className="bi bi-calendar-event me-1"></i>
-                        {course.academicYear} - {course.semester}
-                    </div>
-                 )}
-                 
-                 <div className="mt-auto pt-3 d-flex gap-2 flex-column">
-                    <Link to={`/teacher/course/${course.id}`} className="btn btn-outline-primary w-100">
-                        {course.archived ? 'View Archived Details' : 'View Details'}
-                    </Link>
-                    <Button 
-                        variant={course.archived ? "outline-success" : "outline-secondary"} 
-                        size="sm" 
-                        className="w-100"
-                        onClick={() => handleArchiveToggle(course)}
-                    >
-                        {course.archived ? 'Restore Course' : 'Archive Course'}
-                    </Button>
-                 </div>
-              </Card.Body>
-           </Card>
-        </Col>
-     );
-  };
+
 
   const activeCourses = myCourses.filter(c => !c.archived);
   const archivedCourses = myCourses.filter(c => c.archived);
@@ -170,7 +136,7 @@ const TeacherDashboard: React.FC = () => {
              <Tab eventKey="active" title={`Active (${activeCourses.length})`}>
                  <Row className="g-4">
                     {activeCourses.map(course => (
-                       <CourseCard key={course.id} course={course} />
+                       <CourseCard key={course.id} course={course} onArchiveToggle={handleArchiveToggle} />
                     ))}
                     {activeCourses.length === 0 && (
                        <Col xs={12} className="text-center mt-5">
@@ -182,7 +148,7 @@ const TeacherDashboard: React.FC = () => {
              <Tab eventKey="archived" title={`Archived (${archivedCourses.length})`}>
                  <Row className="g-4">
                     {archivedCourses.map(course => (
-                       <CourseCard key={course.id} course={course} />
+                       <CourseCard key={course.id} course={course} onArchiveToggle={handleArchiveToggle} />
                     ))}
                     {archivedCourses.length === 0 && (
                        <Col xs={12} className="text-center mt-5">
@@ -321,6 +287,42 @@ const TeacherDashboard: React.FC = () => {
       </Modal>
     </Container>
   );
+};
+
+const CourseCard = ({ course, onArchiveToggle }: { course: Course, onArchiveToggle: (course: Course) => void }) => {
+   return (
+      <Col md={4} lg={3} className="mb-4">
+         <Card className={`course-card h-100 border-0 shadow-sm ${course.archived ? 'bg-light text-muted' : ''}`}>
+            <Card.Body className="d-flex flex-column">
+               <div className="d-flex justify-content-between align-items-center mb-3">
+                  <Badge bg={course.archived ? "secondary" : "primary"} className="p-2 fs-6">{course.code}</Badge>
+                  {course.archived && <Badge bg="warning" text="dark">Archived</Badge>}
+               </div>
+               <Card.Title className="fw-bold fs-5 mb-2">{course.name}</Card.Title>
+               {course.academicYear && course.semester && (
+                  <div className="mb-3 small text-muted">
+                      <i className="bi bi-calendar-event me-1"></i>
+                      {course.academicYear} - {course.semester}
+                  </div>
+               )}
+               
+               <div className="mt-auto pt-3 d-flex gap-2 flex-column">
+                  <Link to={`/teacher/course/${course.id}`} className="btn btn-outline-primary w-100">
+                      {course.archived ? 'View Archived Details' : 'View Details'}
+                  </Link>
+                  <Button 
+                      variant={course.archived ? "outline-success" : "outline-secondary"} 
+                      size="sm" 
+                      className="w-100"
+                      onClick={() => onArchiveToggle(course)}
+                  >
+                      {course.archived ? 'Restore Course' : 'Archive Course'}
+                  </Button>
+               </div>
+            </Card.Body>
+         </Card>
+      </Col>
+   );
 };
 
 export default TeacherDashboard;

@@ -174,6 +174,7 @@ public class SessionServiceImpl implements SessionService {
             // First Check-in
             attendance = new Attendance();
             attendance.setSessionId(session.getId());
+            attendance.setCourseId(session.getCourseId());
             attendance.setStudentId(studentId);
             attendance.setDeviceStudentId(deviceOwnerId); // Log the device owner
             attendance.setCheckInTimes(new java.util.ArrayList<>(java.util.Collections.singletonList(now)));

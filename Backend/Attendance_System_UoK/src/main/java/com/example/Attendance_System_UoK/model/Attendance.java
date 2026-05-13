@@ -17,6 +17,7 @@ public class Attendance {
     @Id
     private String id;
     private String sessionId;
+    private String courseId; // Denormalized for query performance
     private String studentId;
     private LocalDateTime markedAt; // Keep for backward compatibility/last marked time
     private List<LocalDateTime> checkInTimes;

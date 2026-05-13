@@ -46,10 +46,10 @@ public class CourseServiceImpl implements CourseService {
                 .stream()
                 .map(course -> {
                     String teacherName = "Unknown Teacher";
-                    if (course.getTeacherId() != null) {
-                        teacherName = teacherRepository.findById(course.getTeacherId())
-                                .map(Teacher::getFullName)
-                                .orElse("Unknown Teacher");
+                    if (course.getTeacherIds() != null && !course.getTeacherIds().isEmpty()) {
+                        teacherName = course.getTeacherIds().stream()
+                                .map(id -> teacherRepository.findById(id).map(Teacher::getFullName).orElse("Unknown Teacher"))
+                                .collect(Collectors.joining(", "));
                     }
                     return new CourseBasicResponse(
                             course.getId(),
@@ -77,7 +77,7 @@ public class CourseServiceImpl implements CourseService {
         Course c = new Course();
         c.setName(dto.getName());
         c.setCode(dto.getCode());
-        c.setTeacherId(teacher.getId());
+        c.setTeacherIds(new java.util.ArrayList<>(java.util.Collections.singletonList(teacher.getId())));
         c.setEnrollmentKey(dto.getEnrollmentKey());
 
         // Auto-populate from System Settings
@@ -155,7 +155,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public List<Course> getCoursesByTeacher(String teacherId) {
-        return courseRepository.findByTeacherId(teacherId);
+        return courseRepository.findByTeacherIdsContainingOrTeacherId(teacherId, teacherId);
     }
 
     @Override
@@ -165,10 +165,10 @@ public class CourseServiceImpl implements CourseService {
                 .filter(course -> course.getStudentIds() != null && course.getStudentIds().contains(studentId))
                 .map(course -> {
                     String teacherName = "Unknown Teacher";
-                    if (course.getTeacherId() != null) {
-                        teacherName = teacherRepository.findById(course.getTeacherId())
-                                .map(Teacher::getFullName)
-                                .orElse("Unknown Teacher");
+                    if (course.getTeacherIds() != null && !course.getTeacherIds().isEmpty()) {
+                        teacherName = course.getTeacherIds().stream()
+                                .map(id -> teacherRepository.findById(id).map(Teacher::getFullName).orElse("Unknown Teacher"))
+                                .collect(Collectors.joining(", "));
                     }
                     return new CourseBasicResponse(
                             course.getId(),
@@ -192,10 +192,10 @@ public class CourseServiceImpl implements CourseService {
     public CourseBasicResponse getCourseDetails(String courseId) {
         Course course = getCourseById(courseId);
         String teacherName = "Unknown Teacher";
-        if (course.getTeacherId() != null) {
-            teacherName = teacherRepository.findById(course.getTeacherId())
-                    .map(Teacher::getFullName)
-                    .orElse("Unknown Teacher");
+        if (course.getTeacherIds() != null && !course.getTeacherIds().isEmpty()) {
+            teacherName = course.getTeacherIds().stream()
+                    .map(id -> teacherRepository.findById(id).map(Teacher::getFullName).orElse("Unknown Teacher"))
+                    .collect(Collectors.joining(", "));
         }
         return new CourseBasicResponse(
                 course.getId(),
@@ -246,7 +246,7 @@ public class CourseServiceImpl implements CourseService {
         Course c = new Course();
         c.setName(dto.getName());
         c.setCode(dto.getCode());
-        c.setTeacherId(teacher.getId());
+        c.setTeacherIds(new java.util.ArrayList<>(java.util.Collections.singletonList(teacher.getId())));
         c.setEnrollmentKey(dto.getEnrollmentKey());
 
         // Auto-populate from System Settings
