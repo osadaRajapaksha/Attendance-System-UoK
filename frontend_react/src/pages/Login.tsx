@@ -22,22 +22,7 @@ const Login: React.FC = () => {
     }
   }, [auth, navigate]);
 
-  // Restore OTP state on reload
-  useEffect(() => {
-    const otpPending = sessionStorage.getItem('otp_pending');
-    if (otpPending === 'true') {
-      const savedEmail = sessionStorage.getItem('email');
-      const savedPassword = sessionStorage.getItem('password');
-      if (savedEmail && savedPassword) {
-        setEmail(savedEmail);
-        setPassword(savedPassword);
-        setShowOtp(true);
-      }
-    }
-  }, []);
 
-  const [otp, setOtp] = useState('');
-  const [showOtp, setShowOtp] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,21 +30,9 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       const payload: any = { email, password };
-      if (showOtp) payload.otp = otp;
 
       const response = await api.post('/api/auth/login', payload);
       const data = response.data;
-
-      // Check if 2FA is required
-      if (data.requiresTwoFactor) {
-        setShowOtp(true);
-        setLoading(false);
-        // Persist state for reload protection
-        sessionStorage.setItem('otp_pending', 'true');
-        sessionStorage.setItem('email', email);
-        sessionStorage.setItem('password', password);
-        return;
-      }
 
       const { token, deviceToken, role, fullName, studentId, teacherId, adminId, degreeProgram, faculty } = data;
 
@@ -81,10 +54,7 @@ const Login: React.FC = () => {
         faculty
       });
 
-      // Clear OTP state on successful login
-      sessionStorage.removeItem('otp_pending');
-      sessionStorage.removeItem('email');
-      sessionStorage.removeItem('password');
+
 
       if (role === 'ROLE_STUDENT') navigate('/student-dashboard');
       else if (role === 'ROLE_TEACHER') navigate('/teacher-dashboard');
@@ -99,8 +69,7 @@ const Login: React.FC = () => {
         setError('Network Error');
       }
     } finally {
-      if (!showOtp) setLoading(false); // Only stop loading if not switching to OTP mode
-      else setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -138,25 +107,10 @@ const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={showOtp}
               />
             </Form.Group>
 
-            {showOtp && (
-              <Form.Group className="mb-3" controlId="formBasicOtp">
-                <Form.Label>One-Time Password (OTP)</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Enter OTP sent to your email"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
-                />
-                <Form.Text className="text-muted">
-                  Check your email for the 6-digit code.
-                </Form.Text>
-              </Form.Group>
-            )}
+
             <Button variant="primary" type="submit" className="w-100" disabled={loading}>
               {loading ? <Spinner animation="border" size="sm" /> : 'Login'}
             </Button>

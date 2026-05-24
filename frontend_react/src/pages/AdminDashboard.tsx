@@ -809,6 +809,7 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
     const [attendanceList, setAttendanceList] = useState<any[]>([]);
     const [loadingAttendance, setLoadingAttendance] = useState(false);
     const [editData, setEditData] = useState<Partial<Session>>({});
+    const [isDownloading, setIsDownloading] = useState(false);
     
     // Map State
     const { isLoaded } = useJsApiLoader({
@@ -933,32 +934,26 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
         }
     };
 
-    const handleDownloadExcel = () => {
+    const handleDownloadExcel = async () => {
         if (!session || attendanceList.length === 0) return;
-
-        const data = enrolledStudents.map(student => {
-            const record = attendanceList.find((a: any) => a.studentId === student.id || a.studentId === student.studentId);
-            const isPresent = record && record.status === 'PRESENT';
-            const isFraud = record && record.status === 'FRAUD';
-            
-            let status = "ABSENT";
-            if (isPresent) status = "PRESENT";
-            if (isFraud) status = "FRAUD";
-            if (record?.isManuallyMarked) status += " (Manual)";
-
-            return {
-                "Student ID": student.studentId,
-                "Name": student.fullName,
-                "Status": status,
-                "Check-in Time": record?.checkInTimes ? new Date(record.checkInTimes[0]).toLocaleTimeString() : "-",
-                "Notes": record?.manualMarkNote || ""
-            };
-        });
-
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-        XLSX.writeFile(wb, `${course?.code}_${session.title}_Attendance.xlsx`);
+        setIsDownloading(true);
+        try {
+            const response = await api.get(`/api/attendance/session/${session.id}/export`, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${course?.code}_${session.title}_Attendance.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to download attendance.");
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     if (!session) return null;
@@ -1060,8 +1055,8 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
                              <Button variant="outline-primary" size="sm" onClick={() => setShowManualMark(!showManualMark)}>
                                 {showManualMark ? <span><i className="bi bi-x-square me-1"></i>Hide Manual Mark</span> : <span><i className="bi bi-pencil-square me-1"></i>Manual Mark</span>}
                             </Button>
-                            <Button variant="success" size="sm" onClick={handleDownloadExcel}>
-                                <i className="bi bi-file-earmark-spreadsheet me-1"></i>Download Excel
+                            <Button variant="success" size="sm" onClick={handleDownloadExcel} disabled={isDownloading}>
+                                {isDownloading ? <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" /> Downloading...</> : <><i className="bi bi-file-earmark-spreadsheet me-1"></i>Download Excel</>}
                             </Button>
                         </div>
                         

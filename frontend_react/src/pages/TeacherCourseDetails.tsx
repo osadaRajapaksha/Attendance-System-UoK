@@ -35,6 +35,11 @@ const TeacherCourseDetails: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     
+    // Downloading states
+    const [isDownloadingEnrolled, setIsDownloadingEnrolled] = useState(false);
+    const [isDownloadingAttendance, setIsDownloadingAttendance] = useState(false);
+    const [isDownloadingGradebook, setIsDownloadingGradebook] = useState(false);
+    
     // Pagination State
     const [studentPage, setStudentPage] = useState(1);
     const [attendancePage, setAttendancePage] = useState(1);
@@ -281,49 +286,52 @@ const TeacherCourseDetails: React.FC = () => {
         }
     };
 
-    const handleDownloadExcel = () => {
+    const handleDownloadExcel = async () => {
         if (enrolledStudents.length === 0) return;
-
-        const data = enrolledStudents.map(student => ({
-            "Full Name": student.fullName,
-            "Student ID": student.studentId
-        }));
-
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "Enrolled Students");
-        XLSX.writeFile(wb, `${course.code}_Enrolled_Students.xlsx`);
+        setIsDownloadingEnrolled(true);
+        try {
+            const response = await api.get(`/api/courses/${courseId}/export/students`, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${course?.code}_Enrolled_Students.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to download enrolled students.");
+        } finally {
+            setIsDownloadingEnrolled(false);
+        }
     };
 
-    const handleDownloadAttendanceExcel = () => {
-        if (enrolledStudents.length === 0) return;
-
-        const data = enrolledStudents.map(student => {
-            const attendanceRecord = attendanceList.find((att: any) => att.studentId === student.id || att.studentId === student.studentId);
-            const isPresent = attendanceRecord && attendanceRecord.status === 'PRESENT';
-            const isFraud = attendanceRecord && attendanceRecord.status === 'FRAUD';
-            
-            let status = "ABSENT";
-            if (isPresent) status = "PRESENT";
-            if (isFraud) status = "FRAUD (Device Mismatch)";
-            if (attendanceRecord?.isManuallyMarked) status += " (Manual)";
-
-            return {
-                "Full Name": student.fullName,
-                "Student ID": student.studentId,
-                "Status": status,
-                "Check-in Time": attendanceRecord?.checkInTimes ? new Date(attendanceRecord.checkInTimes[0]).toLocaleTimeString() : "-",
-                "Notes": attendanceRecord?.manualMarkNote || ""
-            };
-        });
-
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-        XLSX.writeFile(wb, `${course.code}_${selectedSessionTitle}_Attendance.xlsx`);
+    const handleDownloadAttendanceExcel = async () => {
+        if (enrolledStudents.length === 0 || !selectedSessionId) return;
+        setIsDownloadingAttendance(true);
+        try {
+            const response = await api.get(`/api/attendance/session/${selectedSessionId}/export`, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${course?.code}_${selectedSessionTitle}_Attendance.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to download attendance.");
+        } finally {
+            setIsDownloadingAttendance(false);
+        }
     };
 
     const handleDownloadGradebook = async () => {
+        setIsDownloadingGradebook(true);
         try {
             const response = await api.get(`/api/teachers/courses/${courseId}/gradebook/export`, {
                 responseType: 'blob',
@@ -338,6 +346,8 @@ const TeacherCourseDetails: React.FC = () => {
         } catch (err) {
             console.error(err);
             alert("Failed to download gradebook.");
+        } finally {
+            setIsDownloadingGradebook(false);
         }
     };
 
@@ -452,8 +462,8 @@ const TeacherCourseDetails: React.FC = () => {
                         <Card.Body>
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h5 className="mb-0">Class Performance</h5>
-                                <Button variant="success" size="sm" onClick={handleDownloadGradebook}>
-                                    <i className="bi bi-file-earmark-spreadsheet me-2"></i> Export Gradebook
+                                <Button variant="success" size="sm" onClick={handleDownloadGradebook} disabled={isDownloadingGradebook}>
+                                    {isDownloadingGradebook ? <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" /> Exporting...</> : <><i className="bi bi-file-earmark-spreadsheet me-2"></i> Export Gradebook</>}
                                 </Button>
                             </div>
                             {loadingGradebook ? <Spinner animation="border" /> : (
@@ -518,8 +528,8 @@ const TeacherCourseDetails: React.FC = () => {
                     <Card>
                         <Card.Body>
                             <div className="d-flex justify-content-end mb-3">
-                                <Button variant="success" size="sm" onClick={handleDownloadExcel} disabled={enrolledStudents.length === 0}>
-                                    <i className="bi bi-file-earmark-spreadsheet me-2"></i> Download Excel
+                                <Button variant="success" size="sm" onClick={handleDownloadExcel} disabled={enrolledStudents.length === 0 || isDownloadingEnrolled}>
+                                    {isDownloadingEnrolled ? <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" /> Downloading...</> : <><i className="bi bi-file-earmark-spreadsheet me-2"></i> Download Excel</>}
                                 </Button>
                             </div>
                             {enrolledStudents.length === 0 ? <p>No students enrolled.</p> : (
@@ -690,8 +700,8 @@ const TeacherCourseDetails: React.FC = () => {
                          enrolledStudents.length === 0 ? <p>No students enrolled in this course.</p> : (
                             <>
                              <div className="d-flex justify-content-end mb-2">
-                                 <Button variant="success" size="sm" onClick={handleDownloadAttendanceExcel}>
-                                     <i className="bi bi-file-earmark-spreadsheet me-2"></i> Download Excel
+                                 <Button variant="success" size="sm" onClick={handleDownloadAttendanceExcel} disabled={isDownloadingAttendance}>
+                                     {isDownloadingAttendance ? <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" /> Downloading...</> : <><i className="bi bi-file-earmark-spreadsheet me-2"></i> Download Excel</>}
                                  </Button>
                              </div>
                              <Table striped hover responsive>

@@ -17,9 +17,61 @@ import java.util.List;
 public class ExcelExportServiceImpl implements ExcelExportService {
 
     @Override
-    public ByteArrayInputStream exportAttendanceToExcel(String courseName, List<StudentBasicInfo> students) {
-        // Implementation for single session export if needed, or remove if unused
-        return generateEnrolledStudentsReport(courseName, students);
+    public ByteArrayInputStream exportAttendanceToExcel(String sessionTitle, List<StudentBasicInfo> students) {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Attendance");
+
+            Row headerRow = sheet.createRow(0);
+            String[] columns = { "Full Name", "Student ID", "Status", "Check-in Time", "Notes" };
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font font = workbook.createFont();
+            font.setBold(true);
+            headerStyle.setFont(font);
+
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columns[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int rowIdx = 1;
+            for (StudentBasicInfo student : students) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(student.getFullName());
+                row.createCell(1).setCellValue(student.getStudentId() != null ? student.getStudentId() : "N/A");
+                
+                String status = "ABSENT";
+                if ("PRESENT".equals(student.getStatus())) {
+                    status = "PRESENT";
+                } else if ("FRAUD".equals(student.getStatus())) {
+                    status = "FRAUD (Device Mismatch)";
+                }
+                row.createCell(2).setCellValue(status);
+
+                String checkInTime = "-";
+                if (student.getMarkedAt() != null) {
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+                    checkInTime = student.getMarkedAt().format(formatter);
+                }
+                row.createCell(3).setCellValue(checkInTime);
+                
+                String notes = "";
+                if (student.getDeviceMismatchInfo() != null) {
+                    notes = "Device Owner: " + student.getDeviceMismatchInfo();
+                }
+                row.createCell(4).setCellValue(notes);
+            }
+
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to generate Excel file: " + e.getMessage());
+        }
     }
 
     @Override
