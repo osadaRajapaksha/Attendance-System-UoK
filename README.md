@@ -40,10 +40,10 @@ Traditional attendance marking methods are often time-consuming and prone to err
 - Bootstrap
 
 **Backend**
-- PHP / Java / Node.js *(Update according to your project)*
+- Spring Boot
 
 **Database**
-- MySQL
+- Mongo DB
 
 ## 🚀 Installation
 
@@ -51,14 +51,6 @@ Traditional attendance marking methods are often time-consuming and prone to err
 git clone https://github.com/osadaRajapaksha/Attendance-System-UoK.git
 cd Attendance-System-UoK
 ```
-
-### Configure Database
-
-```sql
-CREATE DATABASE attendance_system;
-```
-
-Import the database script and update the configuration file with your database credentials.
 
 ## 📊 System Workflow
 
