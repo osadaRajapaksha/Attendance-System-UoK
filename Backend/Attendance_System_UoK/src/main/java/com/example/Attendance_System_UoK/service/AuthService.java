@@ -10,5 +10,7 @@ public interface AuthService {
 
     AuthResponse login(LoginRequest request);
 
+    AuthResponse asgardeoLogin(String token);
+
     void resetPassword(String email, String otp, String newPassword);
 }
