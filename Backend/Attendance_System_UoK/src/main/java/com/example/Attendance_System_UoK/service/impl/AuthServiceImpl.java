@@ -12,10 +12,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtDecoders;
-import org.springframework.security.oauth2.jwt.JwtException;
 
 import java.time.LocalDateTime;
 
@@ -32,15 +28,6 @@ public class AuthServiceImpl implements AuthService {
     private final com.example.Attendance_System_UoK.service.OtpService otpService;
     private final com.example.Attendance_System_UoK.util.DeviceTokenUtil deviceTokenUtil;
     private final com.example.Attendance_System_UoK.service.UserService userService;
-
-    private JwtDecoder asgardeoJwtDecoder = null;
-
-    private JwtDecoder getAsgardeoJwtDecoder() {
-        if (asgardeoJwtDecoder == null) {
-            asgardeoJwtDecoder = JwtDecoders.fromIssuerLocation("https://api.asgardeo.io/t/attendanceuok/oauth2/token");
-        }
-        return asgardeoJwtDecoder;
-    }
 
     // REGISTER ONLY STUDENTS
     @Override
@@ -164,57 +151,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return response;
-    }
-
-    @Override
-    public AuthResponse asgardeoLogin(String token) {
-        try {
-            Jwt jwt = getAsgardeoJwtDecoder().decode(token);
-            String email = jwt.getClaimAsString("email");
-            if (email == null) {
-                email = jwt.getClaimAsString("username");
-            }
-            if (email == null) {
-                throw new RuntimeException("Email claim not found in Asgardeo token");
-            }
-
-            User user = userService.findUserByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not registered in the system"));
-
-            if (user instanceof Student) {
-                studentRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
-            } else if (user instanceof Teacher) {
-                teacherRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
-            } else if (user instanceof Admin) {
-                adminRepository.updateLastLogin(user.getUsername(), LocalDateTime.now());
-            }
-
-            String appToken = jwtUtil.generateToken(user);
-            String deviceToken = deviceTokenUtil.encrypt(user.getId());
-
-            AuthResponse response = new AuthResponse();
-            response.setToken(appToken);
-            response.setDeviceToken(deviceToken);
-            response.setEmail(user.getEmail());
-            response.setFullName(user.getFullName());
-            response.setRole(user.getRole());
-            response.setId(user.getId());
-            response.setFaculty(user.getFaculty());
-
-            if (user instanceof Student) {
-                response.setStudentId(((Student) user).getStudentId());
-                response.setDegreeProgram(((Student) user).getDegreeProgram());
-            } else if (user instanceof Teacher) {
-                response.setTeacherId(((Teacher) user).getTeacherId());
-            } else if (user instanceof Admin) {
-                response.setAdminId(((Admin) user).getAdminId());
-            }
-
-            return response;
-
-        } catch (JwtException e) {
-            throw new RuntimeException("Invalid Asgardeo token: " + e.getMessage());
-        }
     }
 
     @Override

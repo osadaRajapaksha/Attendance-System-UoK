@@ -3,7 +3,6 @@ import { Form, Button, Container, Alert, Spinner, Card } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
-import { useAuthContext } from "@asgardeo/auth-react";
 import uokLogo from '../assets/Attendance_system_uok.png';
 
 const Login: React.FC = () => {
@@ -13,7 +12,6 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
-  const { signIn, state, getIDToken } = useAuthContext();
 
   useEffect(() => {
     if (auth?.isAuthenticated && auth?.user) {
@@ -24,50 +22,6 @@ const Login: React.FC = () => {
     }
   }, [auth, navigate]);
 
-  useEffect(() => {
-    const handleAsgardeoLogin = async () => {
-      if (state.isAuthenticated && !auth?.isAuthenticated) {
-        try {
-          setLoading(true);
-          const idToken = await getIDToken();
-          
-          const response = await api.post('/api/auth/asgardeo-login', { token: idToken });
-          const data = response.data;
-          
-          const { token, deviceToken, role, fullName, studentId, teacherId, adminId, degreeProgram, faculty, email: responseEmail } = data;
-
-          const existingDeviceToken = localStorage.getItem('device_token');
-          if (!existingDeviceToken && deviceToken) {
-            localStorage.setItem('device_token', deviceToken);
-          }
-
-          auth?.login({
-            token,
-            email: responseEmail,
-            role,
-            fullName,
-            studentId,
-            teacherId,
-            adminId,
-            degreeProgram,
-            faculty
-          });
-
-          if (role === 'ROLE_STUDENT') navigate('/student-dashboard');
-          else if (role === 'ROLE_TEACHER') navigate('/teacher-dashboard');
-          else if (role === 'ROLE_ADMIN') navigate('/admin-dashboard');
-          else navigate('/');
-
-        } catch (err: any) {
-          console.error(err);
-          setError('Asgardeo Login Failed. User may not be registered in the system.');
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    handleAsgardeoLogin();
-  }, [state.isAuthenticated, auth, navigate, getIDToken]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,22 +114,6 @@ const Login: React.FC = () => {
             <Button variant="primary" type="submit" className="w-100" disabled={loading}>
               {loading ? <Spinner animation="border" size="sm" /> : 'Login'}
             </Button>
-            
-            <div className="d-flex align-items-center my-3">
-              <hr className="flex-grow-1" />
-              <span className="mx-2 text-muted">OR</span>
-              <hr className="flex-grow-1" />
-            </div>
-            <Button 
-              variant="outline-dark" 
-              className="w-100 d-flex align-items-center justify-content-center" 
-              onClick={(e) => { e.preventDefault(); signIn(); }}
-              disabled={loading}
-            >
-              <img src="https://asgardeo.io/theme/images/favicon.ico" alt="Asgardeo" style={{width: '20px', marginRight: '10px'}} />
-              Continue with Asgardeo
-            </Button>
-
             <div className="text-end mt-3">
               <Link to="/forgot-password" className="custom-link fw-bold" style={{ fontSize: '0.9rem' }}>Forgot Password?</Link>
             </div>
