@@ -8,9 +8,12 @@ import { AuthProvider as CustomAuthProvider } from './context/AuthContext';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider as AsgardeoAuthProvider } from "@asgardeo/auth-react";
 
+const isLocal = window.location.hostname === 'localhost';
+const siteUrl = isLocal ? 'http://localhost:5173' : 'http://attendance-system-uok-frontend-scxk9wwq.s3-website-us-east-1.amazonaws.com';
+
 const asgardeoConfig = {
-  signInRedirectURL: window.location.origin + "/login",
-  signOutRedirectURL: window.location.origin + "/login",
+  signInRedirectURL: siteUrl + "/login",
+  signOutRedirectURL: siteUrl + "/login",
   clientID: "nSf4bAcMaaBhMfHMx37nxE3K6k0a",
   baseUrl: "https://api.asgardeo.io/t/attendanceuok",
   scope: ["openid", "profile", "email"]
