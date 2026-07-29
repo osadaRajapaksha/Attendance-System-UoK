@@ -35,6 +35,21 @@ public class AuthController {
         return ResponseEntity.ok(authService.asgardeoLogin(token));
     }
 
+    @PostMapping("/asgardeo-register")
+    public ResponseEntity<AuthResponse> asgardeoRegister(@RequestBody java.util.Map<String, String> request) {
+        String token = request.get("token");
+        String studentId = request.get("studentId");
+        String degreeProgram = request.get("degreeProgram");
+        String faculty = request.get("faculty");
+        String department = request.get("department");
+
+        if (token == null || token.isEmpty() || studentId == null || studentId.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(authService.asgardeoRegister(token, studentId, degreeProgram, faculty, department));
+    }
+
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody java.util.Map<String, String> request) {
         String email = request.get("email");

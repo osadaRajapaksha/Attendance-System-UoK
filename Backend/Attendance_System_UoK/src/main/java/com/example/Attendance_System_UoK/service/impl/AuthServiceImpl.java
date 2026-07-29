@@ -37,7 +37,7 @@ public class AuthServiceImpl implements AuthService {
 
     private JwtDecoder getAsgardeoJwtDecoder() {
         if (asgardeoJwtDecoder == null) {
-            asgardeoJwtDecoder = JwtDecoders.fromIssuerLocation("https://api.asgardeo.io/t/attendanceuok/oauth2/token");
+            asgardeoJwtDecoder = JwtDecoders.fromIssuerLocation("https://api.eu.asgardeo.io/t/attendancesystem/oauth2/token");
         }
         return asgardeoJwtDecoder;
     }
@@ -211,6 +211,62 @@ public class AuthServiceImpl implements AuthService {
             }
 
             return response;
+
+        } catch (JwtException e) {
+            throw new RuntimeException("Invalid Asgardeo token: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public AuthResponse asgardeoRegister(String token, String studentId, String degreeProgram, String faculty, String department) {
+        try {
+            Jwt jwt = getAsgardeoJwtDecoder().decode(token);
+            String email = jwt.getClaimAsString("email");
+            if (email == null) {
+                email = jwt.getClaimAsString("username");
+            }
+            if (email == null) {
+                throw new RuntimeException("Email claim not found in Asgardeo token");
+            }
+            String fullName = jwt.getClaimAsString("given_name");
+            if (fullName == null) fullName = email;
+
+            if (userService.findUserByEmail(email).isPresent()) {
+                throw new RuntimeException("User already exists");
+            }
+
+            Student student = new Student();
+            student.setEmail(email);
+            student.setFullName(fullName);
+            student.setUsername(email);
+            // Since Asgardeo handles auth, we generate a random dummy password or leave it empty if allowed.
+            // Spring Security might need a password for the UserDetails, so let's set a random one.
+            student.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+            student.setRole(Role.ROLE_STUDENT);
+            student.setActive(true);
+            student.setCreatedAt(LocalDateTime.now());
+            student.setUpdatedAt(LocalDateTime.now());
+
+            student.setStudentId(studentId);
+            student.setDegreeProgram(degreeProgram);
+            student.setFaculty(faculty);
+            student.setDepartment(department);
+
+            studentRepository.save(student);
+
+            String appToken = jwtUtil.generateToken(student);
+            String deviceToken = deviceTokenUtil.encrypt(student.getId());
+
+            return new AuthResponse(
+                    appToken,
+                    deviceToken,
+                    student.getEmail(),
+                    student.getFullName(),
+                    student.getRole(),
+                    student.getStudentId(),
+                    student.getDegreeProgram(),
+                    student.getFaculty()
+            );
 
         } catch (JwtException e) {
             throw new RuntimeException("Invalid Asgardeo token: " + e.getMessage());

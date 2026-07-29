@@ -2,14 +2,17 @@ import React, { useContext } from 'react';
 import { Navbar, Container, Nav, Button } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useAuthContext } from "@asgardeo/auth-react";
 import uokLogo from '../assets/Attendance_system_uok.png';
 
 const NavBar: React.FC = () => {
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
+  const { signOut } = useAuthContext();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     auth?.logout();
+    await signOut();
     navigate('/login');
   };
 

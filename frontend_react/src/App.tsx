@@ -2,7 +2,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import NavBar from './components/Navbar';
 import Login from './pages/Login';
-import Register from './pages/Register';
+import AuthCallback from './pages/AuthCallback';
 import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -39,7 +39,7 @@ import Terms from './pages/Terms';
 
 function App() {
   const location = useLocation();
-  const hideNavBar = ['/login', '/register', '/forgot-password'].includes(location.pathname);
+  const hideNavBar = ['/login', '/forgot-password', '/auth/callback'].includes(location.pathname);
 
   return (
     <div className={`d-flex flex-column min-vh-100 ${hideNavBar ? 'auth-bg' : ''}`}>
@@ -48,7 +48,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/terms" element={<Terms />} />
 

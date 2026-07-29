@@ -12,5 +12,7 @@ public interface AuthService {
 
     AuthResponse asgardeoLogin(String token);
 
+    AuthResponse asgardeoRegister(String token, String studentId, String degreeProgram, String faculty, String department);
+
     void resetPassword(String email, String otp, String newPassword);
 }
