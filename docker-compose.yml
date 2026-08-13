@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    image: ${DOCKERHUB_USERNAME}/attendance-backend:latest
+    container_name: attendance-backend
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    networks:
+      - attendance_network
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/attendance-frontend:latest
+    container_name: attendance-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - attendance_network
+
+networks:
+  attendance_network:
+    driver: bridge

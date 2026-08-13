@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-@CrossOrigin("*")
+
 @RestController
 @RequestMapping("/api/otp")
 public class OtpController {
