@@ -33,7 +33,7 @@ function HomeRedirect() {
 }
 
 import Terms from './pages/Terms';
-// import Footer from './components/Footer'; // Removed as requested
+import Footer from './components/Footer';
 
 // ... (existing code)
 
@@ -44,7 +44,7 @@ function App() {
   return (
     <div className={`d-flex flex-column min-vh-100 ${hideNavBar ? 'auth-bg' : ''}`}>
       {!hideNavBar && <NavBar />}
-      <div className="flex-grow-1">
+      <div className="flex-grow-1 mb-5 pb-5">
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
@@ -73,7 +73,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </div>
-      {/* <Footer /> Removed as requested */}
+      <Footer />
     </div>
   );
 }
