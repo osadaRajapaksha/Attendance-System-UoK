@@ -4,7 +4,7 @@ const api = axios.create({
   //baseURL: 'https://api.attendancesystemuok.me', 
   // Adjust if backend runs on different port
   //baseURL: 'http://localhost:8080'
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+  baseURL: import.meta.env.VITE_API_BASE_URL 
 });
 
 api.interceptors.request.use(
