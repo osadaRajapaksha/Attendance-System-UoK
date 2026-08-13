@@ -463,14 +463,14 @@ const TeacherCourseDetails: React.FC = () => {
                                                                 </div>
                                                             </div>
 
-                                                            <div className="d-flex justify-content-between align-items-center mt-3">
+                                                            <div className="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-3">
                                                                 <Badge bg={
                                                                     status === 'ACTIVE' ? 'success' : 
                                                                     status === 'SCHEDULED' ? 'primary' : 
                                                                     status === 'DELETED' ? 'danger' : 'secondary'
                                                                 }>{s.status}</Badge>
                                                                 
-                                                                <div className="d-flex gap-2">
+                                                                <div className="d-flex flex-wrap gap-2">
                                                                     {status === 'ACTIVE' && (
                                                                         <>
                                                                             <Button variant="outline-success" size="sm" onClick={() => handleExtendSession(s, 10)}>
