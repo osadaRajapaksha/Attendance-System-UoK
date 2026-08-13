@@ -63,6 +63,12 @@ const StudentDashboard: React.FC = () => {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [enrollmentKey, setEnrollmentKey] = useState('');
   const [enrollError, setEnrollError] = useState('');
+
+  /* State for Enrollment Process */
+  const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null);
+  const [showEnrollStatusModal, setShowEnrollStatusModal] = useState(false);
+  const [enrollStatus, setEnrollStatus] = useState<'success' | 'error' | 'idle'>('idle');
+  const [enrollStatusMsg, setEnrollStatusMsg] = useState('');
   
   const [currentTerm, setCurrentTerm] = useState('');
   
@@ -126,23 +132,27 @@ const StudentDashboard: React.FC = () => {
   
 // Submit enrollment to API; accepts optional key
   const submitEnrollment = async (courseId: string, key: string | null) => {
+    setEnrollingCourseId(courseId);
     try {
       setError('');
       setSuccess('');
       setEnrollError('');
       
       await api.post(`/api/courses/${courseId}/enroll${key ? `?key=${key}` : ''}`);
-      setSuccess('Enrolled successfully!');
+      setEnrollStatus('success');
+      setEnrollStatusMsg('Enrolled successfully!');
       setShowEnrollModal(false);
+      setShowEnrollStatusModal(true);
       fetchEnrolledCourses();
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Enrollment failed';
-      if (key) {
-           setEnrollError(msg);
-      } else {
-           setError(msg); // show global error
-      }
+      setEnrollStatus('error');
+      setEnrollStatusMsg(msg);
+      setShowEnrollModal(false);
+      setShowEnrollStatusModal(true);
       console.error(err);
+    } finally {
+      setEnrollingCourseId(null);
     }
   };
   
@@ -214,6 +224,7 @@ const StudentDashboard: React.FC = () => {
                             key={course.id} 
                             course={course} 
                             isEnrolled={isEnrolled(course.id)}
+                            isEnrolling={enrollingCourseId === course.id}
                             onArchive={() => handleArchiveCourse(course.id)}
                             onUnarchive={() => handleUnarchiveCourse(course.id)}
                             onEnrollClick={() => handleEnrollClick(course)}
@@ -234,6 +245,7 @@ const StudentDashboard: React.FC = () => {
                             key={course.id} 
                             course={course} 
                             isEnrolled={isEnrolled(course.id)}
+                            isEnrolling={enrollingCourseId === course.id}
                             onArchive={() => handleArchiveCourse(course.id)}
                             onUnarchive={() => handleUnarchiveCourse(course.id)}
                             onEnrollClick={() => handleEnrollClick(course)}
@@ -253,6 +265,7 @@ const StudentDashboard: React.FC = () => {
                             key={course.id} 
                             course={course} 
                             isEnrolled={isEnrolled(course.id)}
+                            isEnrolling={enrollingCourseId === course.id}
                             onArchive={() => handleArchiveCourse(course.id)}
                             onUnarchive={() => handleUnarchiveCourse(course.id)}
                             onEnrollClick={() => handleEnrollClick(course)}
@@ -378,7 +391,36 @@ const StudentDashboard: React.FC = () => {
         </Modal.Body>
         <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowEnrollModal(false)}>Cancel</Button>
-            <Button variant="primary" onClick={() => selectedCourse && submitEnrollment(selectedCourse.id, enrollmentKey)}>Enroll</Button>
+            <Button variant="primary" onClick={() => selectedCourse && submitEnrollment(selectedCourse.id, enrollmentKey)} disabled={enrollingCourseId !== null}>
+                {enrollingCourseId !== null ? <Spinner size="sm" className="me-2" /> : null}
+                Enroll
+            </Button>
+        </Modal.Footer>
+      </Modal>
+      {/* Enrollment Status Modal */}
+      <Modal show={showEnrollStatusModal} onHide={() => setShowEnrollStatusModal(false)} centered>
+        <Modal.Header closeButton>
+            <Modal.Title>
+                {enrollStatus === 'success' ? 'Success' : 'Error'}
+            </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center py-4">
+            {enrollStatus === 'success' ? (
+                <>
+                    <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+                    <p className="mt-3 fs-5">{enrollStatusMsg}</p>
+                </>
+            ) : (
+                <>
+                    <i className="bi bi-x-circle-fill text-danger" style={{ fontSize: '3rem' }}></i>
+                    <p className="mt-3 fs-5">{enrollStatusMsg}</p>
+                </>
+            )}
+        </Modal.Body>
+        <Modal.Footer>
+            <Button variant={enrollStatus === 'success' ? 'success' : 'secondary'} onClick={() => setShowEnrollStatusModal(false)}>
+                Close
+            </Button>
         </Modal.Footer>
       </Modal>
     </Container>
@@ -388,12 +430,14 @@ const StudentDashboard: React.FC = () => {
 const CourseCard = ({ 
   course, 
   isEnrolled, 
+  isEnrolling,
   onArchive, 
   onUnarchive, 
   onEnrollClick 
 }: { 
   course: Course, 
   isEnrolled: boolean, 
+  isEnrolling: boolean,
   onArchive: () => void, 
   onUnarchive: () => void, 
   onEnrollClick: () => void 
@@ -438,8 +482,8 @@ const CourseCard = ({
           </Card.Text>
           <div className="mt-3">
             {!isEnrolled ? (
-              <Button variant="primary" className="w-100" onClick={onEnrollClick}>
-                Enroll Now
+              <Button variant="primary" className="w-100" onClick={onEnrollClick} disabled={isEnrolling}>
+                {isEnrolling ? <><Spinner size="sm" className="me-2" />Enrolling...</> : "Enroll Now"}
               </Button>
             ) : (
               <Button variant="success" className="w-100" as={Link as any} to={`/student/course/${course.id}`}>
