@@ -51,11 +51,7 @@ const Register: React.FC = () => {
     setError('');
     setSuccess('');
 
-    const msDomainRegex = /^[A-Za-z0-9._%+-]+@(outlook\.com|hotmail\.com|live\.com|kln\.ac\.lk|stu\.kln\.ac\.lk)$/i;
-    if (!msDomainRegex.test(formData.email)) {
-      setError("Invalid email domain. Only Microsoft accounts and University emails (@kln.ac.lk, @stu.kln.ac.lk) are allowed.");
-      return;
-    }
+    // Basic Validation matching legacy logic
 
     if (!formData.studentId) {
       setError("Please enter your Student Number.");
