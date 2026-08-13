@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Container, Button, Card, Row, Col, Spinner, Alert, Modal, Table, Tabs, Tab, Badge, Form, Pagination as ReactPagination } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
-import { GoogleMap, useJsApiLoader, DrawingManager } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import api from '../api/axios';
 import * as XLSX from 'exceljs';
 
@@ -125,25 +125,54 @@ const TeacherCourseDetails: React.FC = () => {
         setMap(null);
     }, []);
 
-    const onRectangleComplete = (rect: any) => {
-        const bounds = rect.getBounds();
-        const ne = bounds.getNorthEast();
-        const sw = bounds.getSouthWest();
-        
-        const corners = [
-            { lat: ne.lat(), lng: ne.lng() }, 
-            { lat: sw.lat(), lng: ne.lng() }, 
-            { lat: sw.lat(), lng: sw.lng() }, 
-            { lat: ne.lat(), lng: sw.lng() }  
-        ];
-        
-        setEditBoundary(corners);
-        
-        if (rectRef.current) {
-            rectRef.current.setMap(null);
+    useEffect(() => {
+        if (!showEditModal) {
+            if (rectRef.current) {
+                rectRef.current.setMap(null);
+                rectRef.current = null;
+            }
         }
-        rectRef.current = rect;
-    };
+    }, [showEditModal]);
+
+    useEffect(() => {
+        if (map && window.google && showEditModal) {
+            if (rectRef.current) {
+                rectRef.current.setMap(null);
+            }
+            
+            let bounds;
+            if (editBoundary && editBoundary.length > 0) {
+                bounds = new window.google.maps.LatLngBounds();
+                editBoundary.forEach((c: any) => bounds.extend(c));
+            } else {
+                const offset = 0.002;
+                bounds = {
+                    north: mapCenter.lat + offset,
+                    south: mapCenter.lat - offset,
+                    east: mapCenter.lng + offset,
+                    west: mapCenter.lng - offset,
+                };
+            }
+
+            const rect = new window.google.maps.Rectangle({
+                bounds,
+                editable: true,
+                draggable: true,
+                map: map,
+                fillColor: '#0d6efd',
+                fillOpacity: 0.35,
+                strokeColor: '#0d6efd',
+                strokeWeight: 2,
+            });
+            rectRef.current = rect;
+            
+            map.fitBounds(bounds);
+            
+            return () => {
+                if (rect) rect.setMap(null);
+            };
+        }
+    }, [map, showEditModal]);
 
     // Handlers
     const handleEditClick = (session: any) => {
@@ -158,12 +187,27 @@ const TeacherCourseDetails: React.FC = () => {
     const handleSaveEdit = async () => {
         if (!editSession) return;
         
+        let finalBoundary = editBoundary;
+        if (rectRef.current && rectRef.current.getBounds) {
+            const bounds = rectRef.current.getBounds();
+            if (bounds) {
+                 const ne = bounds.getNorthEast();
+                 const sw = bounds.getSouthWest();
+                 finalBoundary = [
+                     { lat: ne.lat(), lng: ne.lng() },
+                     { lat: sw.lat(), lng: ne.lng() },
+                     { lat: sw.lat(), lng: sw.lng() },
+                     { lat: ne.lat(), lng: sw.lng() }
+                 ];
+            }
+        }
+
         try {
             await api.put(`/api/sessions/update/${editSession.id}`, { 
                 title: editTitle,
                 startTime: editStart,
                 endTime: editEnd,
-                boundary: editBoundary
+                boundary: finalBoundary
             });
             setShowEditModal(false);
             fetchCourseDetails(); // Refresh all
@@ -618,7 +662,32 @@ const TeacherCourseDetails: React.FC = () => {
                             </Col>
                         </Row>
                                     <Form.Group className="mb-3">
-                            <Form.Label>Location (Redraw to update)</Form.Label>
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                <Form.Label className="mb-0">Location (Redraw to update)</Form.Label>
+                                <Button variant="outline-primary" size="sm" onClick={() => {
+                                    if (map && rectRef.current) {
+                                        const center = map.getCenter();
+                                        const mapBounds = map.getBounds();
+                                        if (center && mapBounds) {
+                                            const ne = mapBounds.getNorthEast();
+                                            const sw = mapBounds.getSouthWest();
+                                            const latSpan = ne.lat() - sw.lat();
+                                            const lngSpan = ne.lng() - sw.lng();
+                                            const offsetLat = latSpan * 0.15;
+                                            const offsetLng = lngSpan * 0.15;
+                                            
+                                            rectRef.current.setBounds({
+                                                north: center.lat() + offsetLat,
+                                                south: center.lat() - offsetLat,
+                                                east: center.lng() + offsetLng,
+                                                west: center.lng() - offsetLng,
+                                            });
+                                        }
+                                    }
+                                }}>
+                                    <i className="bi bi-crosshair me-1"></i> Center Rectangle Here
+                                </Button>
+                            </div>
                             {isLoaded ? (
                                 <GoogleMap
                                     mapContainerStyle={containerStyle}
@@ -627,19 +696,6 @@ const TeacherCourseDetails: React.FC = () => {
                                     onLoad={onLoad}
                                     onUnmount={onUnmount}
                                 >
-                                    <DrawingManager
-                                        onRectangleComplete={onRectangleComplete}
-                                        options={{
-                                            drawingControl: true,
-                                            drawingControlOptions: {
-                                                drawingModes: ['rectangle' as any]
-                                            },
-                                            rectangleOptions: {
-                                                editable: true,
-                                                draggable: true
-                                            }
-                                        }}
-                                    />
                                 </GoogleMap>
                             ) : <Spinner animation="border" />}
                         </Form.Group>

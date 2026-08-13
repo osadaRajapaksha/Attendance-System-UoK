@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Container, Form, Button, Alert, Spinner, Row, Col, Modal } from 'react-bootstrap';
-import { GoogleMap, useJsApiLoader, DrawingManager } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import api from '../api/axios';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -13,6 +13,35 @@ const defaultCenter = {
   lat: 7.2906, 
   lng: 80.6337
 };
+
+class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', background: '#ffdddd', color: 'red', borderRadius: '5px' }}>
+          <h4>Component Crashed</h4>
+          <pre>{this.state.error?.toString()}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const libraries: ("drawing" | "geometry")[] = ['drawing', 'geometry'];
 
 const TeacherSessionCreate: React.FC = () => {
     const { courseId } = useParams<{courseId: string}>();
@@ -95,7 +124,57 @@ const TeacherSessionCreate: React.FC = () => {
     // Modal State
     const [showAddLocationModal, setShowAddLocationModal] = useState(false);
     const [saveLocationName, setSaveLocationName] = useState('');
-    const [modalBoundary, setModalBoundary] = useState<{lat: number, lng: number}[]>([]);
+    const tempRectRef = useRef<any>(null);
+    const [modalMap, setModalMap] = useState<any>(null);
+
+    const onModalMapLoad = useCallback((map: any) => {
+        setModalMap(map);
+    }, []);
+    const onModalMapUnmount = useCallback((map: any) => {
+        setModalMap(null);
+    }, []);
+
+    React.useEffect(() => {
+        if (!showAddLocationModal) {
+            setSaveLocationName('');
+            if (tempRectRef.current) {
+                tempRectRef.current.setMap(null);
+                tempRectRef.current = null;
+            }
+        }
+    }, [showAddLocationModal]);
+
+    React.useEffect(() => {
+        if (modalMap && window.google && showAddLocationModal) {
+            if (tempRectRef.current) {
+                tempRectRef.current.setMap(null);
+            }
+            const offset = 0.002;
+            const bounds = {
+                north: mapCenter.lat + offset,
+                south: mapCenter.lat - offset,
+                east: mapCenter.lng + offset,
+                west: mapCenter.lng - offset,
+            };
+            const rect = new window.google.maps.Rectangle({
+                bounds,
+                editable: true,
+                draggable: true,
+                map: modalMap,
+                fillColor: '#0d6efd',
+                fillOpacity: 0.35,
+                strokeColor: '#0d6efd',
+                strokeWeight: 2,
+            });
+            tempRectRef.current = rect;
+            
+            return () => {
+                if (rect) {
+                    rect.setMap(null);
+                }
+            };
+        }
+    }, [modalMap, showAddLocationModal]);
 
     React.useEffect(() => {
         api.get('/api/locations').then(res => {
@@ -145,7 +224,7 @@ const TeacherSessionCreate: React.FC = () => {
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: "AIzaSyA2eLFexIQfCqji9Tgrb73vKVJh0Fm_RXs",
-        libraries: ['drawing', 'geometry']
+        libraries: libraries
     });
 
     const [map, setMap] = React.useState<any>(null);
@@ -190,10 +269,27 @@ const TeacherSessionCreate: React.FC = () => {
     };
 
     const handleSaveLocation = async () => {
-        if (modalBoundary.length !== 4) {
-            setError("Please draw an area on the map first.");
+        if (!tempRectRef.current) {
+            setError("Please define an area on the map first.");
             return;
         }
+        
+        const bounds = tempRectRef.current.getBounds();
+        if (!bounds) {
+            setError("Invalid area.");
+            return;
+        }
+
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        
+        const corners = [
+            { lat: ne.lat(), lng: ne.lng() }, 
+            { lat: sw.lat(), lng: ne.lng() }, 
+            { lat: sw.lat(), lng: sw.lng() }, 
+            { lat: ne.lat(), lng: sw.lng() }  
+        ];
+
         if (!saveLocationName) {
             setError("Please provide a name for the location.");
             return;
@@ -201,13 +297,11 @@ const TeacherSessionCreate: React.FC = () => {
         try {
             const res = await api.post('/api/locations/create', {
                 name: saveLocationName,
-                boundary: modalBoundary
+                boundary: corners
             });
             const newLocations = [...savedLocations, res.data];
             setSavedLocations(newLocations);
             setSuccess("Location saved successfully!");
-            setSaveLocationName('');
-            setModalBoundary([]);
             setShowAddLocationModal(false);
             
             handleSelectLocation(res.data.id, newLocations);
@@ -225,20 +319,7 @@ const TeacherSessionCreate: React.FC = () => {
         setMap(null);
     }, []);
 
-    const onModalRectangleComplete = (rect: any) => {
-        const bounds = rect.getBounds();
-        const ne = bounds.getNorthEast();
-        const sw = bounds.getSouthWest();
-        
-        const corners = [
-            { lat: ne.lat(), lng: ne.lng() }, 
-            { lat: sw.lat(), lng: ne.lng() }, 
-            { lat: sw.lat(), lng: sw.lng() }, 
-            { lat: ne.lat(), lng: sw.lng() }  
-        ];
-        
-        setModalBoundary(corners);
-    };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -311,6 +392,7 @@ const TeacherSessionCreate: React.FC = () => {
           </Modal>
 
           <Modal show={showAddLocationModal} onHide={() => setShowAddLocationModal(false)} size="lg" centered>
+              <ErrorBoundary>
               <Modal.Header closeButton>
                   <Modal.Title>Add New Location</Modal.Title>
               </Modal.Header>
@@ -325,36 +407,52 @@ const TeacherSessionCreate: React.FC = () => {
                       />
                   </Form.Group>
                   <Form.Group className="mb-3">
-                      <Form.Label>Draw Area (Rectangle)</Form.Label>
-                      <div className="border p-1 rounded">
-                          <GoogleMap
-                            mapContainerStyle={{ width: '100%', height: '350px' }}
-                            center={mapCenter}
-                            zoom={15}
-                          >
-                             <DrawingManager
-                                onRectangleComplete={onModalRectangleComplete}
-                                options={{
-                                    drawingControl: true,
-                                    drawingControlOptions: {
-                                        drawingModes: ['rectangle' as any],
-                                        position: window.google?.maps?.ControlPosition?.TOP_CENTER
-                                    },
-                                    rectangleOptions: {
-                                        editable: true,
-                                        draggable: true
-                                    }
-                                }}
-                             />
-                          </GoogleMap>
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                          <Form.Label className="mb-0">Draw Area (Rectangle)</Form.Label>
+                          <Button variant="outline-primary" size="sm" onClick={() => {
+                              if (modalMap && tempRectRef.current) {
+                                  const center = modalMap.getCenter();
+                                  const mapBounds = modalMap.getBounds();
+                                  if (center && mapBounds) {
+                                      const ne = mapBounds.getNorthEast();
+                                      const sw = mapBounds.getSouthWest();
+                                      const latSpan = ne.lat() - sw.lat();
+                                      const lngSpan = ne.lng() - sw.lng();
+                                      const offsetLat = latSpan * 0.15;
+                                      const offsetLng = lngSpan * 0.15;
+                                      
+                                      tempRectRef.current.setBounds({
+                                          north: center.lat() + offsetLat,
+                                          south: center.lat() - offsetLat,
+                                          east: center.lng() + offsetLng,
+                                          west: center.lng() - offsetLng,
+                                      });
+                                  }
+                              }
+                          }}>
+                              <i className="bi bi-crosshair me-1"></i> Center Rectangle Here
+                          </Button>
                       </div>
-                      <Form.Text className="text-muted mt-1">Draw a square/rectangle shape to define the boundaries.</Form.Text>
+                      <div className="border p-1 rounded">
+                          {showAddLocationModal && (
+                              <GoogleMap
+                                mapContainerStyle={{ width: '100%', height: '350px' }}
+                                center={mapCenter}
+                                zoom={15}
+                                onLoad={onModalMapLoad}
+                                onUnmount={onModalMapUnmount}
+                              >
+                              </GoogleMap>
+                          )}
+                      </div>
+                      <Form.Text className="text-muted mt-1">Drag and resize the rectangle to define the classroom boundaries.</Form.Text>
                   </Form.Group>
               </Modal.Body>
               <Modal.Footer>
                   <Button variant="secondary" onClick={() => setShowAddLocationModal(false)}>Cancel</Button>
                   <Button variant="primary" onClick={handleSaveLocation}>Save Location</Button>
               </Modal.Footer>
+              </ErrorBoundary>
           </Modal>
           
           <Form onSubmit={handleSubmit}>

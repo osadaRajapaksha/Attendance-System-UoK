@@ -781,7 +781,7 @@ const StudentDetailsModal = ({ show, onHide, student, refreshStudents }: { show:
     );
 };
 
-import { GoogleMap, useJsApiLoader, DrawingManager } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 
 const containerStyle = {
   width: '100%',
@@ -861,25 +861,54 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
         setMap(null);
     }, []);
 
-    const onRectangleComplete = (rect: any) => {
-        const bounds = rect.getBounds();
-        const ne = bounds.getNorthEast();
-        const sw = bounds.getSouthWest();
-        
-        const corners = [
-            { lat: ne.lat(), lng: ne.lng() }, 
-            { lat: sw.lat(), lng: ne.lng() }, 
-            { lat: sw.lat(), lng: sw.lng() }, 
-            { lat: ne.lat(), lng: sw.lng() }  
-        ];
-        
-        setEditData(prev => ({ ...prev, boundary: corners }));
-        
-        if (rectRef.current) {
-            rectRef.current.setMap(null);
+    useEffect(() => {
+        if (!show) {
+            if (rectRef.current) {
+                rectRef.current.setMap(null);
+                rectRef.current = null;
+            }
         }
-        rectRef.current = rect;
-    };
+    }, [show]);
+
+    useEffect(() => {
+        if (map && window.google && show) {
+            if (rectRef.current) {
+                rectRef.current.setMap(null);
+            }
+            
+            let bounds;
+            if (editData.boundary && editData.boundary.length > 0) {
+                bounds = new window.google.maps.LatLngBounds();
+                editData.boundary.forEach((c: any) => bounds.extend(c));
+            } else {
+                const offset = 0.002;
+                bounds = {
+                    north: mapCenter.lat + offset,
+                    south: mapCenter.lat - offset,
+                    east: mapCenter.lng + offset,
+                    west: mapCenter.lng - offset,
+                };
+            }
+
+            const rect = new window.google.maps.Rectangle({
+                bounds,
+                editable: true,
+                draggable: true,
+                map: map,
+                fillColor: '#0d6efd',
+                fillOpacity: 0.35,
+                strokeColor: '#0d6efd',
+                strokeWeight: 2,
+            });
+            rectRef.current = rect;
+            
+            map.fitBounds(bounds);
+            
+            return () => {
+                if (rect) rect.setMap(null);
+            };
+        }
+    }, [map, show]);
 
     const fetchAttendance = async () => {
         if (!session) return;
@@ -907,8 +936,24 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!session) return;
+        
+        let finalBoundary = editData.boundary;
+        if (rectRef.current && rectRef.current.getBounds) {
+            const bounds = rectRef.current.getBounds();
+            if (bounds) {
+                 const ne = bounds.getNorthEast();
+                 const sw = bounds.getSouthWest();
+                 finalBoundary = [
+                     { lat: ne.lat(), lng: ne.lng() },
+                     { lat: sw.lat(), lng: ne.lng() },
+                     { lat: sw.lat(), lng: sw.lng() },
+                     { lat: ne.lat(), lng: sw.lng() }
+                 ];
+            }
+        }
+
         try {
-            await api.put(`/api/sessions/update/${session.id}`, editData);
+            await api.put(`/api/sessions/update/${session.id}`, { ...editData, boundary: finalBoundary });
             setMsg({ type: 'success', content: 'Session updated successfully' });
             refreshSessions();
         } catch (err: any) {
@@ -1015,7 +1060,32 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
                             
                             {!isExpired && (
                                 <Form.Group className="mb-3 mt-3">
-                                    <Form.Label>Location (Redraw to update)</Form.Label>
+                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                        <Form.Label className="mb-0">Location (Redraw to update)</Form.Label>
+                                        <Button variant="outline-primary" size="sm" onClick={() => {
+                                            if (map && rectRef.current) {
+                                                const center = map.getCenter();
+                                                const mapBounds = map.getBounds();
+                                                if (center && mapBounds) {
+                                                    const ne = mapBounds.getNorthEast();
+                                                    const sw = mapBounds.getSouthWest();
+                                                    const latSpan = ne.lat() - sw.lat();
+                                                    const lngSpan = ne.lng() - sw.lng();
+                                                    const offsetLat = latSpan * 0.15;
+                                                    const offsetLng = lngSpan * 0.15;
+                                                    
+                                                    rectRef.current.setBounds({
+                                                        north: center.lat() + offsetLat,
+                                                        south: center.lat() - offsetLat,
+                                                        east: center.lng() + offsetLng,
+                                                        west: center.lng() - offsetLng,
+                                                    });
+                                                }
+                                            }
+                                        }}>
+                                            <i className="bi bi-crosshair me-1"></i> Center Rectangle Here
+                                        </Button>
+                                    </div>
                                     {isLoaded ? (
                                         <GoogleMap
                                             mapContainerStyle={containerStyle}
@@ -1024,19 +1094,6 @@ const SessionDetailsModal = ({ show, onHide, session, course, refreshSessions }:
                                             onLoad={onLoad}
                                             onUnmount={onUnmount}
                                         >
-                                            <DrawingManager
-                                                onRectangleComplete={onRectangleComplete}
-                                                options={{
-                                                    drawingControl: true,
-                                                    drawingControlOptions: {
-                                                        drawingModes: ['rectangle' as any]
-                                                    },
-                                                    rectangleOptions: {
-                                                        editable: true,
-                                                        draggable: true
-                                                    }
-                                                }}
-                                            />
                                         </GoogleMap>
                                     ) : <Spinner animation="border" size="sm" />}
                                 </Form.Group>
