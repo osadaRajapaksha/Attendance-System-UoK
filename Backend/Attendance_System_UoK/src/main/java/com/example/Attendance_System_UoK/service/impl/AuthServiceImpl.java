@@ -38,41 +38,10 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already exists");
         }
 
-        // Validate OTP
-        if (!otpService.validateOtp(request.getEmail(), request.getOtp())) {
-            throw new RuntimeException("Invalid or expired OTP");
-        }
-
-        // Extract Student ID from Email
-        // Format: name-XXYYZZZ@stu.kln.ac.lk -> XX/20YY/ZZZ
-        // Example: madhuma-ec21071@stu.kln.ac.lk -> EC/2021/071
-        String email = request.getEmail();
-        String studentId = null;
-
-        // Regex to match: any chars + hyphen + 2 letters + 2 digits + 3 or more digits
-        // + @stu.kln.ac.lk
-        java.util.regex.Pattern pattern = java.util.regex.Pattern
-                .compile(".*-([a-zA-Z]{2})(\\d{2})(\\d{3,})@stu\\.kln\\.ac\\.lk$");
-        java.util.regex.Matcher matcher = pattern.matcher(email);
-
-        if (matcher.find()) {
-            String dept = matcher.group(1).toUpperCase();
-            String year = "20" + matcher.group(2);
-            String number = matcher.group(3);
-            studentId = dept + "/" + year + "/" + number;
-        } else {
-            // Fallback or Error?
-            // Since it is a student registration, we arguably should require this format.
-            // OR we fallback to request.getStudentId() if verified?
-            // User Request implies we should extract it. If it fails, it's not a valid
-            // student email for this system?
-            // Let's fallback to manual entry if extraction fails, OR throw error if user
-            // insists on only extraction.
-            // User said: "no need to input student number in registe.its can axtract by
-            // email"
-            // So we enforce the email format.
-            throw new RuntimeException(
-                    "Invalid Student Email Format. Expected: name-deptYearNumber@stu.kln.ac.lk (e.g., name-ec21071@stu.kln.ac.lk)");
+        // Use manually entered Student ID
+        String studentId = request.getStudentId();
+        if (studentId == null || studentId.trim().isEmpty()) {
+            throw new RuntimeException("Student ID is required");
         }
 
         Student student = new Student();

@@ -28,38 +28,16 @@ const Register: React.FC = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    studentId: '',
     password: '',
     faculty: 'Science',
     degreeProgram: '',
-    otp: '',
     agreeToTerms: false
   });
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
-
-  // Restore state on load
-  React.useEffect(() => {
-    const savedOtpSent = sessionStorage.getItem('register_otpSent');
-    if (savedOtpSent === 'true') {
-      const savedFormData = sessionStorage.getItem('register_formData');
-      if (savedFormData) {
-        setFormData(JSON.parse(savedFormData));
-        setOtpSent(true);
-      }
-    }
-  }, []);
-
-  // Save state when it changes (if OTP is sent)
-  React.useEffect(() => {
-    if (otpSent) {
-      sessionStorage.setItem('register_otpSent', 'true');
-      sessionStorage.setItem('register_formData', JSON.stringify(formData));
-    }
-  }, [otpSent, formData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -68,34 +46,19 @@ const Register: React.FC = () => {
     });
   };
 
-  const handleSendOtp = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
     const msDomainRegex = /^[A-Za-z0-9._%+-]+@(outlook\.com|hotmail\.com|live\.com|kln\.ac\.lk|stu\.kln\.ac\.lk)$/i;
     if (!msDomainRegex.test(formData.email)) {
       setError("Invalid email domain. Only Microsoft accounts and University emails (@kln.ac.lk, @stu.kln.ac.lk) are allowed.");
       return;
     }
 
-    setOtpLoading(true);
-    setError('');
-    try {
-      await api.post('/api/otp/send', { email: formData.email });
-      setOtpSent(true);
-      setSuccess('OTP sent to your email.');
-    } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.message || 'Failed to send OTP');
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!otpSent) {
-      setError("Please verify your email via OTP first.");
+    if (!formData.studentId) {
+      setError("Please enter your Student Number.");
       return;
     }
 
@@ -109,12 +72,9 @@ const Register: React.FC = () => {
 
 
     try {
+      setLoading(true);
       await api.post('/api/auth/register', formData);
       setSuccess('Registration successful! Redirecting to login...');
-      
-      // Clear storage
-      sessionStorage.removeItem('register_otpSent');
-      sessionStorage.removeItem('register_formData');
       
       setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
@@ -147,6 +107,18 @@ const Register: React.FC = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
+              <Form.Label>Student Number</Form.Label>
+              <Form.Control
+                type="text"
+                name="studentId"
+                placeholder="Student Number (e.g., EC/2021/071)"
+                value={formData.studentId}
+                onChange={handleChange}
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
               <Form.Label>Email address</Form.Label>
               <Form.Control
                 type="email"
@@ -155,28 +127,8 @@ const Register: React.FC = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                disabled={otpSent}
               />
-              {!otpSent && (
-                <Button variant="secondary" className="mt-2" onClick={handleSendOtp} disabled={otpLoading || !formData.email}>
-                  {otpLoading ? <Spinner animation="border" size="sm" /> : 'Send OTP'}
-                </Button>
-              )}
             </Form.Group>
-
-            {otpSent && (
-              <Form.Group className="mb-3">
-                <Form.Label>Enter OTP</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="otp"
-                  placeholder="Enter 6-digit OTP"
-                  value={formData.otp}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-            )}
 
             <Form.Group className="mb-3">
               <Form.Label>Password</Form.Label>
