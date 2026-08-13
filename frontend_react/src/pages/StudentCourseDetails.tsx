@@ -71,6 +71,11 @@ const StudentCourseDetails: React.FC = () => {
     const [showUnenrollModal, setShowUnenrollModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     
+    // Attendance Modal State
+    const [showMarkModal, setShowMarkModal] = useState(false);
+    const [attendanceStatus, setAttendanceStatus] = useState<'idle' | 'marking' | 'success' | 'error'>('idle');
+    const [modalMsg, setModalMsg] = useState('');
+    
     // System Settings
     const [attendanceThreshold, setAttendanceThreshold] = useState(80);
 
@@ -159,13 +164,14 @@ const StudentCourseDetails: React.FC = () => {
     };
 
     const markAttendance = async (sessionId: string) => {
-        setMsg('');
-        setError('');
         setMarkingSessionId(sessionId);
+        setAttendanceStatus('marking');
+        setModalMsg('Fetching your location...');
+        setShowMarkModal(true);
         
         if (!navigator.geolocation) {
-            setError("Geolocation is not supported by your browser.");
-            setMarkingSessionId(null);
+            setAttendanceStatus('error');
+            setModalMsg('Geolocation is not supported by your browser.');
             return;
         }
 
@@ -174,6 +180,7 @@ const StudentCourseDetails: React.FC = () => {
                 try {
                     const { latitude, longitude } = position.coords;
                     const deviceToken = localStorage.getItem('device_token');
+                    setModalMsg('Verifying location and marking attendance...');
                     
                     await api.post('/api/sessions/mark', {
                         sessionId,
@@ -181,19 +188,18 @@ const StudentCourseDetails: React.FC = () => {
                         lng: longitude,
                         deviceToken: deviceToken || ""
                     });
-                    setMsg("Attendance Marked Successfully!");
-                    fetchData(); // Refresh marked status
+                    setAttendanceStatus('success');
+                    setModalMsg("Attendance Marked Successfully!");
                 } catch (err: any) {
                     console.error(err);
-                    setError(err.response?.data?.message || "Failed to mark attendance.");
-                } finally {
-                    setMarkingSessionId(null);
+                    setAttendanceStatus('error');
+                    setModalMsg(err.response?.data?.message || "Failed to mark attendance.");
                 }
             },
             (err) => {
                 console.error(err);
-                setError("Unable to retrieve location. Please allow location access.");
-                setMarkingSessionId(null);
+                setAttendanceStatus('error');
+                setModalMsg("Unable to retrieve location. Please allow location access.");
             }
         );
     };
@@ -544,6 +550,55 @@ const StudentCourseDetails: React.FC = () => {
                         OK
                     </Button>
                 </Modal.Footer>
+            </Modal>
+
+            {/* Mark Attendance Modal */}
+            <Modal show={showMarkModal} onHide={() => {
+                if (attendanceStatus !== 'marking') {
+                    setShowMarkModal(false);
+                    setMarkingSessionId(null);
+                }
+            }} centered backdrop="static" keyboard={false}>
+                <Modal.Header closeButton={attendanceStatus !== 'marking'}>
+                    <Modal.Title>
+                        {attendanceStatus === 'marking' && 'Marking Attendance'}
+                        {attendanceStatus === 'success' && 'Success'}
+                        {attendanceStatus === 'error' && 'Error'}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4">
+                    {attendanceStatus === 'marking' && (
+                        <>
+                            <Spinner animation="border" variant="primary" className="mb-3" />
+                            <p>{modalMsg}</p>
+                        </>
+                    )}
+                    {attendanceStatus === 'success' && (
+                        <>
+                            <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+                            <p className="mt-3 fs-5">{modalMsg}</p>
+                        </>
+                    )}
+                    {attendanceStatus === 'error' && (
+                        <>
+                            <i className="bi bi-x-circle-fill text-danger" style={{ fontSize: '3rem' }}></i>
+                            <p className="mt-3 fs-5">{modalMsg}</p>
+                        </>
+                    )}
+                </Modal.Body>
+                {attendanceStatus !== 'marking' && (
+                    <Modal.Footer>
+                        <Button variant={attendanceStatus === 'success' ? 'success' : 'secondary'} onClick={() => {
+                            setShowMarkModal(false);
+                            setMarkingSessionId(null);
+                            if (attendanceStatus === 'success') {
+                                fetchData(); // Refresh marked status
+                            }
+                        }}>
+                            Close
+                        </Button>
+                    </Modal.Footer>
+                )}
             </Modal>
         </Container>
     );
