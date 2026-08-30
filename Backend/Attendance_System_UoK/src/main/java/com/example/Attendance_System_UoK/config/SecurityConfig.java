@@ -74,7 +74,10 @@ public class SecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("*")); // Allow all frontend URLs
+        configuration.setAllowedOrigins(java.util.List.of(
+            "http://localhost:5173", 
+            "https://ddc57beb-650f-4c30-92f6-2a4965c8d980.e1-us-east-azure.choreoapps.dev"
+        ));
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
         configuration.setAllowCredentials(true);
