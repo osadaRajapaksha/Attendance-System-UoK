@@ -14,8 +14,18 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
+# Add a non-root user for security (Checkov CKV_DOCKER_3 requirement)
+RUN addgroup --system --gid 10014 choreo && \
+    adduser --system --uid 10014 --ingroup choreo choreo
+
 # Copy the compiled jar from the build stage
 COPY --from=build /app/target/*.jar app.jar
+
+# Change ownership of the app directory to the new user
+RUN chown -R choreo:choreo /app
+
+# Switch to the non-root user
+USER 10014
 
 # Expose the application port
 EXPOSE 8080
